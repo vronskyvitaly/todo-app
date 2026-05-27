@@ -124,12 +124,38 @@
 
 ---
 
-## 🎯 Следующий урок — Урок 5:
-**Тема: Вопросы — Do you...? Does he...?**
+## ✅ Урок 5: Do you...? / Does he...?
 
-Пример того что будем учить:
-- Do you work? — Yes, I do. / No, I don't.
-- Does he sleep? — Yes, he does. / No, he doesn't.
+### Правило:
+- I / You → **Do** you...? → Yes, I **do** / No, I **don't**
+- He / She → **Does** he/she...? → Yes, he **does** / No, he **doesn't**
+- С does глагол без -s: Does she **eat**? (не ~~eats~~)
+
+### Примеры Витали:
+- Do you work every day? — Yes, I do.
+- Does Genady sleep every night? — Yes, he does.
+- Does your mother drink tea? — Yes, she does.
+- I don't sleep during the day.
+- She doesn't run every morning.
+
+---
+
+## ✅ Урок 6: Where / What + do/does?
+
+### Правило:
+- Вопросительное слово + **do/does** + подлежащее + глагол
+- What do you **do**? = Кем ты работаешь? / Что ты делаешь?
+- Where does he **live**? = Где он живёт?
+
+### Новые слова:
+- live = жить / живёт
+- study = учиться
+
+### Примеры Витали:
+- Where do you live? — I live in Moscow.
+- What does Genady do? — He works as a driver.
+- Where does your mother live? — She lives in Pinsk.
+- Where does Genady work? — He works in Moscow.
 
 ---
 
