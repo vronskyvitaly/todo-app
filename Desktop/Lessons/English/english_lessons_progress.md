@@ -62,8 +62,9 @@
 ### О себе (Витали):
 - My name is Vitali.
 - I am thirty-seven years old.
-- I have a brother. His name is Genady. He is forty years old.
-- My mother's name is Vera.
+- I live in Moscow.
+- I have a brother. His name is Genady. He is forty years old. He works as a driver. He works in Moscow.
+- My mother's name is Vera. She lives in Pinsk.
 
 ---
 
@@ -148,6 +149,7 @@
 - 2026-05-27 | Урок 5 | Does he — отрицание | Ответил "Yes, he does" вместо "No, he doesn't" — перепутал положительный и отрицательный ответ ✅ повторено 2026-05-27
 - 2026-05-27 | Урок 5 | Does she — утверждение | Написал "Yes, she do" вместо "Yes, she does" — с he/she всегда does, не do
 - 2026-05-27 | Урок 5 | don't — отрицательное утверждение | Написал "Yes, I do" вместо "I don't sleep during the day" — перепутал ответ на вопрос с отрицательным предложением
+- 2026-05-27 | Урок 6 | works as — профессия | Написал "He works a driver" вместо "He works as a driver" — пропустил предлог as
 
 ---
 
