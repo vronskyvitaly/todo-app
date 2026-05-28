@@ -19,9 +19,13 @@ export const wsMiddleware: Middleware = (store) => (next) => (action: unknown) =
     const payload = act.payload as { token?: string } | undefined;
     const token = payload?.token ?? "";
 
-    const baseUrl =
-      (typeof process !== "undefined" && process.env.NEXT_PUBLIC_WS_URL) ||
-      "ws://localhost:8000/ws";
+    const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    const apiHost = isLocal
+      ? "localhost:8000"
+      : `api.${host.split(".").slice(1).join(".")}`;
+    const wsProto = isLocal ? "ws" : "wss";
+    const baseUrl = `${wsProto}://${apiHost}/ws`;
 
     const url = token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
 

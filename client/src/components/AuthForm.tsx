@@ -10,9 +10,15 @@ import { setCredentials } from "@/store/authSlice";
 import { WS_CONNECT } from "@/store/wsMiddleware";
 import { loginSchema, registerSchema, LoginFormValues, RegisterFormValues } from "@/lib/authValidations";
 
-const API_URL =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  "http://localhost:8000";
+function getApiUrl(): string {
+  if (typeof window === "undefined") return "http://localhost:8000";
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") return "http://localhost:8000";
+  // Production: client is at todo.X.Y, API is at api.X.Y
+  const parts = host.split(".");
+  parts[0] = "api";
+  return `https://${parts.join(".")}`;
+}
 
 type Mode = "login" | "register";
 
@@ -39,7 +45,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setServerError(null);
     const endpoint = mode === "login" ? "/api/login" : "/api/register";
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`${getApiUrl()}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
