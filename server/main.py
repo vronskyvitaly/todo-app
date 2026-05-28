@@ -1,13 +1,15 @@
 import json
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
+import asyncpg
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
-import bcrypt as _bcrypt
 from pydantic import BaseModel, EmailStr
+import bcrypt as _bcrypt
 
 # ---------------------------------------------------------------------------
 # Config
@@ -15,13 +17,43 @@ from pydantic import BaseModel, EmailStr
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production-super-secret-key")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 7
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/todolist",
+).replace("postgres://", "postgresql://")
 
 # ---------------------------------------------------------------------------
-# In-memory storage
+# In-memory (WebSocket connections only — cannot be persisted)
 # ---------------------------------------------------------------------------
-users: dict[str, dict] = {}          # email → {id, email, hashed_password}
-todos: dict[str, dict[str, dict]] = {}  # user_id → {todo_id → todo}
-connections: dict[str, set] = {}     # user_id → set of WebSocket
+connections: dict[str, set] = {}  # user_id → set of WebSocket
+pool: asyncpg.Pool | None = None
+
+# ---------------------------------------------------------------------------
+# DB lifespan
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global pool
+    pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email           TEXT UNIQUE NOT NULL,
+                hashed_password TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS todos (
+                id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title       TEXT        NOT NULL,
+                description TEXT        NOT NULL DEFAULT '',
+                completed   BOOLEAN     NOT NULL DEFAULT FALSE,
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
+        """)
+    yield
+    await pool.close()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -40,12 +72,21 @@ def create_token(user_id: str) -> str:
 
 
 def decode_token(token: str) -> str:
-    """Return user_id or raise JWTError."""
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     user_id: str = payload.get("sub")
     if user_id is None:
         raise JWTError("Missing sub")
     return user_id
+
+
+def row_to_todo(r: asyncpg.Record) -> dict:
+    return {
+        "id": str(r["id"]),
+        "title": r["title"],
+        "description": r["description"],
+        "completed": r["completed"],
+        "createdAt": r["created_at"].isoformat(),
+    }
 
 
 async def broadcast_to_user(user_id: str, message: dict) -> None:
@@ -57,7 +98,6 @@ async def broadcast_to_user(user_id: str, message: dict) -> None:
         except Exception:
             dead.add(ws)
     connections[user_id] -= dead
-
 
 # ---------------------------------------------------------------------------
 # Pydantic schemas
@@ -71,11 +111,10 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -88,40 +127,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # ---------------------------------------------------------------------------
 # HTTP endpoints
 # ---------------------------------------------------------------------------
 @app.post("/api/register", status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest):
     email = body.email.lower()
-    if email in users:
-        raise HTTPException(status_code=400, detail="Email already registered")
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
-    user_id = str(uuid.uuid4())
-    users[email] = {
-        "id": user_id,
-        "email": email,
-        "hashed_password": hash_password(body.password),
-    }
-    todos[user_id] = {}
+    hashed = hash_password(body.password)
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "INSERT INTO users (email, hashed_password) VALUES ($1, $2) RETURNING id, email",
+                email, hashed,
+            )
+    except asyncpg.UniqueViolationError:
+        raise HTTPException(status_code=400, detail="Email already registered")
 
+    user_id = str(row["id"])
     token = create_token(user_id)
-    return {"token": token, "user": {"id": user_id, "email": email}}
+    return {"token": token, "user": {"id": user_id, "email": row["email"]}}
 
 
 @app.post("/api/login")
 async def login(body: LoginRequest):
     email = body.email.lower()
-    user = users.get(email)
-    if not user or not verify_password(body.password, user["hashed_password"]):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, email, hashed_password FROM users WHERE email = $1",
+            email,
+        )
+    if not row or not verify_password(body.password, row["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_token(user["id"])
-    return {"token": token, "user": {"id": user["id"], "email": user["email"]}}
-
+    user_id = str(row["id"])
+    token = create_token(user_id)
+    return {"token": token, "user": {"id": user_id, "email": row["email"]}}
 
 # ---------------------------------------------------------------------------
 # WebSocket
@@ -137,22 +180,21 @@ async def websocket_endpoint(websocket: WebSocket):
 
     await websocket.accept()
 
-    # Register connection
     if user_id not in connections:
         connections[user_id] = set()
     connections[user_id].add(websocket)
 
-    # Ensure user todo bucket exists
-    if user_id not in todos:
-        todos[user_id] = {}
-
     print(f"[+] WS connected user={user_id}")
 
     try:
-        # Send current todos
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, title, description, completed, created_at FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
+                uuid.UUID(user_id),
+            )
         await websocket.send_text(json.dumps({
             "type": "TODOS_LIST",
-            "payload": list(todos[user_id].values()),
+            "payload": [row_to_todo(r) for r in rows],
         }))
 
         async for raw in websocket.iter_text():
@@ -170,86 +212,116 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
         data = json.loads(raw)
         msg_type = data.get("type")
         payload = data.get("payload", {})
-        user_todos = todos[user_id]
 
         if msg_type == "GET_TODOS":
+            async with pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT id, title, description, completed, created_at FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
+                    uuid.UUID(user_id),
+                )
             await websocket.send_text(json.dumps({
                 "type": "TODOS_LIST",
-                "payload": list(user_todos.values()),
+                "payload": [row_to_todo(r) for r in rows],
             }))
 
         elif msg_type == "CREATE_TODO":
             title = payload.get("title", "").strip()
             if not title:
                 await websocket.send_text(json.dumps({
-                    "type": "ERROR",
-                    "payload": {"message": "Title is required"},
+                    "type": "ERROR", "payload": {"message": "Title is required"},
                 }))
                 return
-            todo_id = str(uuid.uuid4())
-            todo = {
-                "id": todo_id,
-                "title": title,
-                "description": payload.get("description", "").strip(),
-                "completed": False,
-                "createdAt": datetime.now(timezone.utc).isoformat(),
-            }
-            user_todos[todo_id] = todo
-            await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": todo})
+            description = payload.get("description", "").strip()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """INSERT INTO todos (user_id, title, description)
+                       VALUES ($1, $2, $3)
+                       RETURNING id, title, description, completed, created_at""",
+                    uuid.UUID(user_id), title, description,
+                )
+            await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": row_to_todo(row)})
 
         elif msg_type == "UPDATE_TODO":
             todo_id = payload.get("id")
-            if todo_id not in user_todos:
-                await websocket.send_text(json.dumps({
-                    "type": "ERROR",
-                    "payload": {"message": f"Todo '{todo_id}' not found"},
-                }))
+            if not todo_id:
                 return
-            todo = user_todos[todo_id]
+            updates: dict = {}
             if "title" in payload:
                 title = payload["title"].strip()
                 if not title:
                     await websocket.send_text(json.dumps({
-                        "type": "ERROR",
-                        "payload": {"message": "Title cannot be empty"},
+                        "type": "ERROR", "payload": {"message": "Title cannot be empty"},
                     }))
                     return
-                todo["title"] = title
+                updates["title"] = title
             if "description" in payload:
-                todo["description"] = payload["description"].strip()
+                updates["description"] = payload["description"].strip()
             if "completed" in payload:
-                todo["completed"] = bool(payload["completed"])
-            await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": todo})
+                updates["completed"] = bool(payload["completed"])
+            if not updates:
+                return
+
+            values: list = [uuid.UUID(todo_id)]
+            set_parts = []
+            for i, (col, val) in enumerate(updates.items(), start=2):
+                set_parts.append(f"{col} = ${i}")
+                values.append(val)
+            values.append(uuid.UUID(user_id))
+
+            sql = (
+                f"UPDATE todos SET {', '.join(set_parts)} "
+                f"WHERE id = $1 AND user_id = ${len(values)} "
+                f"RETURNING id, title, description, completed, created_at"
+            )
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(sql, *values)
+
+            if row is None:
+                await websocket.send_text(json.dumps({
+                    "type": "ERROR", "payload": {"message": f"Todo '{todo_id}' not found"},
+                }))
+                return
+            await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})
 
         elif msg_type == "DELETE_TODO":
             todo_id = payload.get("id")
-            if todo_id in user_todos:
-                del user_todos[todo_id]
+            if not todo_id:
+                return
+            async with pool.acquire() as conn:
+                result = await conn.execute(
+                    "DELETE FROM todos WHERE id = $1 AND user_id = $2",
+                    uuid.UUID(todo_id), uuid.UUID(user_id),
+                )
+            if result == "DELETE 1":
                 await broadcast_to_user(user_id, {"type": "TODO_DELETED", "payload": {"id": todo_id}})
 
         elif msg_type == "TOGGLE_TODO":
             todo_id = payload.get("id")
-            if todo_id in user_todos:
-                user_todos[todo_id]["completed"] = not user_todos[todo_id]["completed"]
-                await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": user_todos[todo_id]})
+            if not todo_id:
+                return
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """UPDATE todos SET completed = NOT completed
+                       WHERE id = $1 AND user_id = $2
+                       RETURNING id, title, description, completed, created_at""",
+                    uuid.UUID(todo_id), uuid.UUID(user_id),
+                )
+            if row:
+                await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})
 
         else:
             await websocket.send_text(json.dumps({
-                "type": "ERROR",
-                "payload": {"message": f"Unknown message type: {msg_type}"},
+                "type": "ERROR", "payload": {"message": f"Unknown message type: {msg_type}"},
             }))
 
     except json.JSONDecodeError:
         await websocket.send_text(json.dumps({
-            "type": "ERROR",
-            "payload": {"message": "Invalid JSON format"},
+            "type": "ERROR", "payload": {"message": "Invalid JSON format"},
         }))
     except Exception as exc:
         await websocket.send_text(json.dumps({
-            "type": "ERROR",
-            "payload": {"message": str(exc)},
+            "type": "ERROR", "payload": {"message": str(exc)},
         }))
-
 
 # ---------------------------------------------------------------------------
 # Entry point
