@@ -1,8 +1,9 @@
+import datetime
 import json
 import os
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 
 import asyncpg
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
@@ -25,12 +26,15 @@ DATABASE_URL = os.getenv(
 # ---------------------------------------------------------------------------
 # In-memory (WebSocket connections only — cannot be persisted)
 # ---------------------------------------------------------------------------
-connections: dict[str, set] = {}  # user_id → set of WebSocket
+connections: dict[str, set] = {}
 pool: asyncpg.Pool | None = None
 
 # ---------------------------------------------------------------------------
 # DB lifespan
 # ---------------------------------------------------------------------------
+TODO_COLS = "id, title, description, completed, created_at, important, due_date, priority, tags"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pool
@@ -52,6 +56,13 @@ async def lifespan(app: FastAPI):
             );
             CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
         """)
+        # Idempotent column migrations
+        await conn.execute("""
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_date  DATE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS priority  TEXT NOT NULL DEFAULT 'normal';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS tags      TEXT[] NOT NULL DEFAULT '{}';
+        """)
     yield
     await pool.close()
 
@@ -67,7 +78,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_token(user_id: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS)
+    expire = datetime.datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS)
     return jwt.encode({"sub": user_id, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -86,7 +97,20 @@ def row_to_todo(r: asyncpg.Record) -> dict:
         "description": r["description"],
         "completed": r["completed"],
         "createdAt": r["created_at"].isoformat(),
+        "important": r["important"],
+        "dueDate": r["due_date"].isoformat() if r["due_date"] else None,
+        "priority": r["priority"],
+        "tags": list(r["tags"]),
     }
+
+
+def parse_due_date(value) -> datetime.date | None:
+    if not value:
+        return None
+    try:
+        return datetime.date.fromisoformat(str(value))
+    except ValueError:
+        return None
 
 
 async def broadcast_to_user(user_id: str, message: dict) -> None:
@@ -189,7 +213,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT id, title, description, completed, created_at FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
+                f"SELECT {TODO_COLS} FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
                 uuid.UUID(user_id),
             )
         await websocket.send_text(json.dumps({
@@ -216,7 +240,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
         if msg_type == "GET_TODOS":
             async with pool.acquire() as conn:
                 rows = await conn.fetch(
-                    "SELECT id, title, description, completed, created_at FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
+                    f"SELECT {TODO_COLS} FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
                     uuid.UUID(user_id),
                 )
             await websocket.send_text(json.dumps({
@@ -232,12 +256,21 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 }))
                 return
             description = payload.get("description", "").strip()
+            important = bool(payload.get("important", False))
+            due_date = parse_due_date(payload.get("dueDate"))
+            priority = payload.get("priority", "normal")
+            if priority not in ("low", "normal", "high"):
+                priority = "normal"
+            tags = [t for t in payload.get("tags", []) if t]
+
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
-                    """INSERT INTO todos (user_id, title, description)
-                       VALUES ($1, $2, $3)
-                       RETURNING id, title, description, completed, created_at""",
+                    f"""INSERT INTO todos
+                           (user_id, title, description, important, due_date, priority, tags)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        RETURNING {TODO_COLS}""",
                     uuid.UUID(user_id), title, description,
+                    important, due_date, priority, tags,
                 )
             await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": row_to_todo(row)})
 
@@ -258,6 +291,15 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 updates["description"] = payload["description"].strip()
             if "completed" in payload:
                 updates["completed"] = bool(payload["completed"])
+            if "important" in payload:
+                updates["important"] = bool(payload["important"])
+            if "dueDate" in payload:
+                updates["due_date"] = parse_due_date(payload["dueDate"])
+            if "priority" in payload:
+                p = payload["priority"]
+                updates["priority"] = p if p in ("low", "normal", "high") else "normal"
+            if "tags" in payload:
+                updates["tags"] = [t for t in payload["tags"] if t]
             if not updates:
                 return
 
@@ -271,7 +313,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             sql = (
                 f"UPDATE todos SET {', '.join(set_parts)} "
                 f"WHERE id = $1 AND user_id = ${len(values)} "
-                f"RETURNING id, title, description, completed, created_at"
+                f"RETURNING {TODO_COLS}"
             )
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(sql, *values)
@@ -301,9 +343,9 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 return
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
-                    """UPDATE todos SET completed = NOT completed
-                       WHERE id = $1 AND user_id = $2
-                       RETURNING id, title, description, completed, created_at""",
+                    f"""UPDATE todos SET completed = NOT completed
+                        WHERE id = $1 AND user_id = $2
+                        RETURNING {TODO_COLS}""",
                     uuid.UUID(todo_id), uuid.UUID(user_id),
                 )
             if row:

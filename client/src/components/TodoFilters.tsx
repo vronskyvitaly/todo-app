@@ -9,6 +9,7 @@ const FILTERS: { label: string; value: FilterType }[] = [
   { label: "All", value: "all" },
   { label: "Active", value: "active" },
   { label: "Completed", value: "completed" },
+  { label: "Important", value: "important" },
 ];
 
 export default function TodoFilters() {

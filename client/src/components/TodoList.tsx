@@ -12,6 +12,7 @@ export default function TodoList() {
   const filtered = todos.filter((t) => {
     if (filter === "active") return !t.completed;
     if (filter === "completed") return t.completed;
+    if (filter === "important") return t.important;
     return true;
   });
 
@@ -29,13 +30,15 @@ export default function TodoList() {
       {connected && filtered.length === 0 && (
         <div className="text-center py-16 text-slate-500">
           <div className="text-4xl mb-3">
-            {filter === "completed" ? "🎉" : filter === "active" ? "✅" : "📋"}
+            {filter === "completed" ? "🎉" : filter === "active" ? "✅" : filter === "important" ? "⭐" : "📋"}
           </div>
           <p className="text-sm">
             {filter === "completed"
               ? "No completed tasks"
               : filter === "active"
               ? "No active tasks"
+              : filter === "important"
+              ? "No important tasks"
               : "No tasks yet. Add one above!"}
           </p>
         </div>

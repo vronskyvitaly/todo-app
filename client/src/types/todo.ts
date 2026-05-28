@@ -4,6 +4,10 @@ export interface Todo {
   description: string;
   completed: boolean;
   createdAt: string;
+  important: boolean;
+  dueDate: string | null;
+  priority: "low" | "normal" | "high";
+  tags: string[];
 }
 
 export type WsMessageType =
@@ -23,7 +27,7 @@ export interface WsMessage {
   payload?: unknown;
 }
 
-export type FilterType = "all" | "active" | "completed";
+export type FilterType = "all" | "active" | "completed" | "important";
 
 export interface AuthUser {
   id: string;
