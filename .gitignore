@@ -1,0 +1,12 @@
+# Python
+server/.venv/
+server/__pycache__/
+server/*.pyc
+
+# Node
+client/node_modules/
+client/.next/
+client/.env.local
+
+# OS
+.DS_Store
