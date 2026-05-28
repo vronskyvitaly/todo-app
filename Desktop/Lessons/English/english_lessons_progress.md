@@ -159,6 +159,31 @@
 
 ---
 
+## ✅ Урок 7: Have got / Has got
+
+### Правило:
+- I/You → **have got** / **haven't got** / **Have you got...?**
+- He/She → **has got** / **hasn't got** / **Has he got...?**
+- Только для владения (вещи, люди): НЕ путать с don't/doesn't (действия)
+
+### Новые слова:
+- flat = квартира | job = работа | car = машина | cat = кошка | phone = телефон
+
+### Примеры Витали:
+- I have got a brother. His name is Genady.
+- Genady has got a job. He works as a driver.
+- My mother hasn't got a cat.
+- Have you got a flat in Moscow? — Yes, I have.
+- He hasn't got a job.
+
+### Главная ловушка:
+| ❌ Неправильно | ✅ Правильно |
+|---|---|
+| She doesn't a cat | She hasn't got a cat |
+| He doesn't a job | He hasn't got a job |
+
+---
+
 ## 📝 Инструкция для продолжения
 
 Скопируй и отправь это сообщение в новом чате:
