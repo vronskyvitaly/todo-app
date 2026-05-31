@@ -184,6 +184,28 @@
 
 ---
 
+## ✅ Урок 8: Present Continuous (прямо сейчас)
+
+### Формула: I am / He is / You are + глагол-ing
+
+| Кто | Пример |
+|---|---|
+| I | I **am** eating |
+| He / She | He **is** working |
+| You / We | You **are** reading |
+
+### Правило -ing:
+- Обычные: work → working, drink → drinking, read → reading
+- Короткие (3 буквы): run → run**n**ing, sit → sit**t**ing, swim → swim**m**ing
+
+### Примеры Витали:
+- I am drinking tea right now.
+- Genady is working.
+- My mother is sleeping.
+- I am running / swimming.
+
+---
+
 ## 📝 Инструкция для продолжения
 
 Скопируй и отправь это сообщение в новом чате:
