@@ -225,6 +225,8 @@
 - 2026-05-27 | Урок 6 | works as — профессия | Написал "He works a driver" вместо "He works as a driver" — пропустил предлог as ✅ повторено 2026-05-27
 - 2026-05-27 | Урок 7 | hasn't got — отрицание | Написал "doesn't got" вместо "hasn't got" — для have got отрицание всегда hasn't/haven't, не doesn't/don't
 - 2026-05-27 | Урок 7 | have got — словарь | Написал "works" (глагол) вместо "a job" (существительное) и "room" вместо "flat"
+- 2026-06-01 | Словарь | restaurant | Написал "resraurant" и "restiuranting" — правильно: restaurant (существительное, не глагол!)
+- 2026-06-01 | Словарь | language | Написал "langfitch" — правильно: language (лэнгвидж)
 
 ---
 
