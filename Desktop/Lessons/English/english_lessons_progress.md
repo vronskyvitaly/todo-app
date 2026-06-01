@@ -59,7 +59,7 @@
 - How old are you? → I am thirty-seven years old.
 - How old is he? → He is forty years old.
 
-### О себе (Витали):
+### О себе (Виталий):
 - My name is Vitali.
 - I am thirty-seven years old.
 - I live in Moscow.
@@ -169,7 +169,7 @@
 ### Новые слова:
 - flat = квартира | job = работа | car = машина | cat = кошка | phone = телефон
 
-### Примеры Витали:
+### Примеры Виталий:
 - I have got a brother. His name is Genady.
 - Genady has got a job. He works as a driver.
 - My mother hasn't got a cat.
@@ -203,6 +203,102 @@
 - Genady is working.
 - My mother is sleeping.
 - I am running / swimming.
+
+---
+
+## 📖 Словарный запас — все слова
+
+### 👨‍👩‍👧 Семья
+| Английский | Русский |
+|---|---|
+| mother | мама |
+| father | папа |
+| brother | брат |
+| sister | сестра |
+| family | семья |
+| friend | друг |
+
+### 🏙️ Город и места
+| Английский | Русский |
+|---|---|
+| city | город |
+| street | улица |
+| shop | магазин |
+| school | школа |
+| hospital | больница |
+| airport | аэропорт |
+| restaurant | ресторан |
+| flat / apartment | квартира |
+
+### 🚌 Транспорт и вещи
+| Английский | Русский |
+|---|---|
+| bus | автобус |
+| car | машина |
+| phone | телефон |
+| money | деньги |
+| food | еда |
+
+### 💼 Работа и учёба
+| Английский | Русский |
+|---|---|
+| job | работа |
+| language | язык |
+| country | страна |
+| time | время |
+
+### 🐱 Животные
+| Английский | Русский |
+|---|---|
+| cat | кошка |
+| dog | собака |
+| elephant | слон |
+
+### 🎨 Цвета
+| Английский | Русский |
+|---|---|
+| red | красный |
+| blue | синий |
+| green | зелёный |
+| yellow | жёлтый |
+| white | белый |
+| black | чёрный |
+| orange | оранжевый |
+| pink | розовый |
+| grey | серый |
+
+### 🏃 Глаголы действия
+| Английский | Русский | He/She (+s) |
+|---|---|---|
+| eat | есть/кушать | eats |
+| drink | пить | drinks |
+| sleep | спать | sleeps |
+| run | бегать | runs |
+| walk | ходить | walks |
+| work | работать | works |
+| read | читать | reads |
+| watch | смотреть | watches |
+| live | жить | lives |
+| learn | учить | learns |
+| swim | плавать | swims |
+| sit | сидеть | sits |
+
+### ⏰ Время и частота
+| Английский | Русский |
+|---|---|
+| every day | каждый день |
+| every morning | каждое утро |
+| every night | каждую ночь |
+| right now | прямо сейчас |
+| during the day | днём |
+
+### 🔢 Числа
+| Цифра | Английский |
+|---|---|
+| 1–6 | one, two, three, four, five, six |
+| 7–12 | seven, eight, nine, ten, eleven, twelve |
+| 20 / 30 / 40 | twenty / thirty / forty |
+| 37 | thirty-seven |
 
 ---
 
