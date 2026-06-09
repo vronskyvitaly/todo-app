@@ -149,11 +149,11 @@ export default function EditModal() {
                   Due date
                 </span>
               </label>
-              <div className="relative">
+              <div className="relative w-full overflow-hidden">
                 <input
                   type="date"
                   {...register("dueDate")}
-                  style={{ colorScheme: "dark" }}
+                  style={{ colorScheme: "dark", maxWidth: "100%" }}
                   className="w-full min-w-0 rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
                     focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
                 />
