@@ -19,11 +19,13 @@ export default function TodoItem({ todo }: Props) {
       payload: { type: "TOGGLE_TODO", payload: { id: todo.id } },
     });
 
-  const remove = () =>
+  const remove = () => {
+    if (!confirm(`Delete "${todo.title}"?`)) return;
     dispatch({
       type: WS_SEND,
       payload: { type: "DELETE_TODO", payload: { id: todo.id } },
     });
+  };
 
   const edit = () => dispatch(setEditingId(todo.id));
 
