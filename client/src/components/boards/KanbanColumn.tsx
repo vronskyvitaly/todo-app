@@ -129,7 +129,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
 
       {/* Cards + clickable empty area */}
       <div
-        className="flex-1 px-2 pb-2 space-y-1.5 min-h-[4rem] cursor-pointer overflow-y-auto"
+        className="flex-1 px-[15%] sm:px-2 pb-2 space-y-1.5 min-h-[4rem] cursor-pointer overflow-y-auto"
         onClick={(e) => {
           // Only trigger if clicking the area itself, not a card
           if (e.target === e.currentTarget) openAddCard();
@@ -147,7 +147,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
       </div>
 
       {/* Inline add card form / button */}
-      <div className="px-2 pb-2">
+      <div className="px-[15%] sm:px-2 pb-2">
         {addingCard ? (
           <form onSubmit={handleAddCard} className="space-y-2">
             <input
