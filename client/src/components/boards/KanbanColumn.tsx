@@ -83,7 +83,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex-shrink-0 w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
+      className={`flex-shrink-0 w-[82vw] sm:w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
         ${isOver ? "border-indigo-500/60 bg-slate-700/40" : "border-slate-700/30"}`}
     >
       {/* Header */}
@@ -180,10 +180,11 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
         ) : (
           <button
             onClick={openAddCard}
-            className="w-full flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-300
-              hover:bg-slate-700/40 rounded-xl px-3 py-2 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 text-sm font-medium text-indigo-400
+              border border-dashed border-indigo-500/40 hover:border-indigo-500/70 hover:bg-indigo-500/10
+              rounded-xl px-3 py-2.5 transition-colors active:bg-indigo-500/20"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Add card
