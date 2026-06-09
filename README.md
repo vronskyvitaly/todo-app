@@ -20,6 +20,12 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 - Click any column to instantly add a card inline
 - Add, rename, and delete columns; rename and delete boards
 
+**Push Notifications**
+- Web Push API (PWA) — works on iOS Safari after adding to Home Screen
+- Per-task reminders: set "Remind me in X minutes/hours" when creating or editing a task
+- Bell icon in navbar to subscribe/unsubscribe from notifications
+- Server-side scheduler checks reminders every 30 seconds via APScheduler + pywebpush
+
 **General**
 - JWT authentication — register and login
 - All data persisted in PostgreSQL per user account

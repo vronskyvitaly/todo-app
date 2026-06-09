@@ -14,6 +14,7 @@ export const todoSchema = z.object({
   dueDate: z.string().nullable().optional().default(null),
   priority: z.enum(["low", "normal", "high"]).default("normal"),
   tags: z.string().optional().default(""),
+  reminderMinutes: z.string().optional().default(""),
 });
 
 export type TodoFormValues = z.infer<typeof todoSchema>;
@@ -29,5 +30,8 @@ export function formToPayload(data: TodoFormValues) {
     tags: data.tags
       ? data.tags.split(",").map((t) => t.trim()).filter(Boolean)
       : [],
+    reminderAt: data.reminderMinutes
+      ? new Date(Date.now() + parseInt(data.reminderMinutes) * 60 * 1000).toISOString()
+      : null,
   };
 }

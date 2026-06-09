@@ -29,7 +29,7 @@ export default function TodoForm({ onClose }: Props) {
     formState: { errors, isSubmitting },
   } = useForm<TodoFormValues>({
     resolver: zodResolver(todoSchema),
-    defaultValues: { title: "", description: "", important: false, dueDate: null, priority: "normal", tags: "" },
+    defaultValues: { title: "", description: "", important: false, dueDate: null, priority: "normal", tags: "", reminderMinutes: "" },
   });
 
   const { important, dueDate: watchedDueDate } = watch();
@@ -186,6 +186,27 @@ export default function TodoForm({ onClose }: Props) {
                   disabled:opacity-40 disabled:cursor-not-allowed"
               />
             </div>
+          </div>
+
+          {/* Reminder */}
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-slate-400">Remind me</label>
+            <select
+              disabled={!connected}
+              {...register("reminderMinutes")}
+              className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
+                disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <option value="">No reminder</option>
+              <option value="1">In 1 minute</option>
+              <option value="5">In 5 minutes</option>
+              <option value="15">In 15 minutes</option>
+              <option value="30">In 30 minutes</option>
+              <option value="60">In 1 hour</option>
+              <option value="120">In 2 hours</option>
+              <option value="1440">Tomorrow</option>
+            </select>
           </div>
 
           <div className="flex gap-3 pt-1">

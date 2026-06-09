@@ -24,7 +24,7 @@ export default function EditModal() {
     formState: { errors },
   } = useForm<TodoFormValues>({
     resolver: zodResolver(todoSchema),
-    defaultValues: { title: "", description: "", important: false, dueDate: null, priority: "normal", tags: "" },
+    defaultValues: { title: "", description: "", important: false, dueDate: null, priority: "normal", tags: "", reminderMinutes: "" },
   });
 
   const { important, dueDate: watchedDueDate } = watch();
@@ -38,6 +38,7 @@ export default function EditModal() {
         dueDate: todo.dueDate ?? null,
         priority: todo.priority,
         tags: todo.tags.join(", "),
+        reminderMinutes: "",
       });
     }
   }, [todo, reset]);
@@ -189,6 +190,35 @@ export default function EditModal() {
                   placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
               />
             </div>
+          </div>
+
+          {/* Reminder */}
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-slate-400">
+              Remind me
+              {todo?.reminderAt && !todo.reminderSent && (
+                <span className="ml-2 text-indigo-400">
+                  · set for {new Date(todo.reminderAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+              {todo?.reminderSent && (
+                <span className="ml-2 text-slate-500">· sent</span>
+              )}
+            </label>
+            <select
+              {...register("reminderMinutes")}
+              className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+            >
+              <option value="">No reminder</option>
+              <option value="1">In 1 minute</option>
+              <option value="5">In 5 minutes</option>
+              <option value="15">In 15 minutes</option>
+              <option value="30">In 30 minutes</option>
+              <option value="60">In 1 hour</option>
+              <option value="120">In 2 hours</option>
+              <option value="1440">Tomorrow</option>
+            </select>
           </div>
 
           <div className="flex gap-3 pt-1">

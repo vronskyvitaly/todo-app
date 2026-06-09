@@ -6,11 +6,13 @@ from contextlib import asynccontextmanager
 from datetime import timedelta, timezone
 
 import asyncpg
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
 import bcrypt as _bcrypt
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pywebpush import webpush, WebPushException
 
 # ---------------------------------------------------------------------------
 # Config
@@ -23,17 +25,25 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres:postgres@localhost:5432/todolist",
 ).replace("postgres://", "postgresql://")
 
+VAPID_PUBLIC_KEY  = os.getenv("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
+VAPID_EMAIL       = os.getenv("VAPID_EMAIL", "mailto:admin@vronskyvitaly.ru")
+
 # ---------------------------------------------------------------------------
 # In-memory (WebSocket connections only — cannot be persisted)
 # ---------------------------------------------------------------------------
 connections: dict[str, set] = {}
 pool: asyncpg.Pool | None = None
+scheduler = AsyncIOScheduler(timezone="UTC")
 
 # ---------------------------------------------------------------------------
 # DB lifespan
 # ---------------------------------------------------------------------------
-TODO_COLS = "id, title, description, completed, created_at, important, due_date, priority, tags, board_id, column_id, position"
-BOARD_COLS = "id, user_id, name, description, created_at"
+TODO_COLS = (
+    "id, title, description, completed, created_at, important, due_date, "
+    "priority, tags, board_id, column_id, position, reminder_at, reminder_sent"
+)
+BOARD_COLS  = "id, user_id, name, description, created_at"
 COLUMN_COLS = "id, board_id, name, position, created_at"
 
 
@@ -73,18 +83,33 @@ async def lifespan(app: FastAPI):
                 created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
             CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id);
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                endpoint   TEXT        UNIQUE NOT NULL,
+                p256dh     TEXT        NOT NULL,
+                auth       TEXT        NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id);
         """)
         # Idempotent column migrations
         await conn.execute("""
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_date  DATE;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS priority  TEXT NOT NULL DEFAULT 'normal';
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS tags      TEXT[] NOT NULL DEFAULT '{}';
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS board_id  UUID REFERENCES boards(id) ON DELETE SET NULL;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS column_id UUID REFERENCES columns(id) ON DELETE SET NULL;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS position  INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS important      BOOLEAN   NOT NULL DEFAULT FALSE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_date       DATE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS priority       TEXT      NOT NULL DEFAULT 'normal';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS tags           TEXT[]    NOT NULL DEFAULT '{}';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS board_id       UUID      REFERENCES boards(id) ON DELETE SET NULL;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS column_id      UUID      REFERENCES columns(id) ON DELETE SET NULL;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS position       INTEGER   NOT NULL DEFAULT 0;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_at    TIMESTAMPTZ;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_sent  BOOLEAN   NOT NULL DEFAULT FALSE;
         """)
+
+    scheduler.add_job(check_reminders, "interval", seconds=30, id="reminders")
+    scheduler.start()
     yield
+    scheduler.shutdown(wait=False)
     await pool.close()
 
 # ---------------------------------------------------------------------------
@@ -113,37 +138,39 @@ def decode_token(token: str) -> str:
 
 def row_to_todo(r: asyncpg.Record) -> dict:
     return {
-        "id": str(r["id"]),
-        "title": r["title"],
-        "description": r["description"],
-        "completed": r["completed"],
-        "createdAt": r["created_at"].isoformat(),
-        "important": r["important"],
-        "dueDate": r["due_date"].isoformat() if r["due_date"] else None,
-        "priority": r["priority"],
-        "tags": list(r["tags"]),
-        "boardId": str(r["board_id"]) if r["board_id"] else None,
-        "columnId": str(r["column_id"]) if r["column_id"] else None,
-        "position": r["position"],
+        "id":           str(r["id"]),
+        "title":        r["title"],
+        "description":  r["description"],
+        "completed":    r["completed"],
+        "createdAt":    r["created_at"].isoformat(),
+        "important":    r["important"],
+        "dueDate":      r["due_date"].isoformat() if r["due_date"] else None,
+        "priority":     r["priority"],
+        "tags":         list(r["tags"]),
+        "boardId":      str(r["board_id"])   if r["board_id"]   else None,
+        "columnId":     str(r["column_id"])  if r["column_id"]  else None,
+        "position":     r["position"],
+        "reminderAt":   r["reminder_at"].isoformat()  if r["reminder_at"]  else None,
+        "reminderSent": r["reminder_sent"],
     }
 
 
 def row_to_board(r: asyncpg.Record) -> dict:
     return {
-        "id": str(r["id"]),
-        "userId": str(r["user_id"]),
-        "name": r["name"],
+        "id":          str(r["id"]),
+        "userId":      str(r["user_id"]),
+        "name":        r["name"],
         "description": r["description"],
-        "createdAt": r["created_at"].isoformat(),
+        "createdAt":   r["created_at"].isoformat(),
     }
 
 
 def row_to_column(r: asyncpg.Record) -> dict:
     return {
-        "id": str(r["id"]),
-        "boardId": str(r["board_id"]),
-        "name": r["name"],
-        "position": r["position"],
+        "id":        str(r["id"]),
+        "boardId":   str(r["board_id"]),
+        "name":      r["name"],
+        "position":  r["position"],
         "createdAt": r["created_at"].isoformat(),
     }
 
@@ -157,6 +184,15 @@ def parse_due_date(value) -> datetime.date | None:
         return None
 
 
+def parse_reminder(value) -> datetime.datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 async def broadcast_to_user(user_id: str, message: dict) -> None:
     data = json.dumps(message)
     dead: set = set()
@@ -166,6 +202,54 @@ async def broadcast_to_user(user_id: str, message: dict) -> None:
         except Exception:
             dead.add(ws)
     connections[user_id] -= dead
+
+
+async def check_reminders() -> None:
+    """Runs every 30 s — sends push notifications for due reminders."""
+    if not VAPID_PRIVATE_KEY or not pool:
+        return
+    now = datetime.datetime.now(timezone.utc)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT t.id, t.title, ps.endpoint, ps.p256dh, ps.auth
+            FROM todos t
+            JOIN push_subscriptions ps ON ps.user_id = t.user_id
+            WHERE t.reminder_at <= $1
+              AND t.reminder_sent = FALSE
+              AND t.completed     = FALSE
+        """, now)
+
+        for row in rows:
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": row["endpoint"],
+                        "keys": {"p256dh": row["p256dh"], "auth": row["auth"]},
+                    },
+                    data=json.dumps({
+                        "title": "📋 Task Reminder",
+                        "body":  row["title"],
+                        "url":   "/",
+                    }),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": VAPID_EMAIL},
+                )
+            except WebPushException as exc:
+                # Subscription expired or invalid — remove it
+                if exc.response and exc.response.status_code in (404, 410):
+                    await conn.execute(
+                        "DELETE FROM push_subscriptions WHERE endpoint = $1",
+                        row["endpoint"],
+                    )
+            except Exception:
+                pass
+
+            # Mark sent regardless (avoid re-sending on failure)
+            await conn.execute(
+                "UPDATE todos SET reminder_sent = TRUE WHERE id = $1",
+                row["id"],
+            )
 
 # ---------------------------------------------------------------------------
 # Pydantic schemas
@@ -188,6 +272,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:3001",
         "https://todo.vronskyvitaly.ru",
     ],
     allow_credentials=True,
@@ -234,6 +319,58 @@ async def login(body: LoginRequest):
     token = create_token(user_id)
     return {"token": token, "user": {"id": user_id, "email": row["email"]}}
 
+
+@app.get("/api/push/vapid-key")
+async def get_vapid_key():
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+
+@app.post("/api/push/subscribe")
+async def subscribe_push(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    try:
+        user_id = decode_token(auth_header[7:])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    data = await request.json()
+    endpoint = data.get("endpoint")
+    keys     = data.get("keys", {})
+    p256dh   = keys.get("p256dh")
+    auth_key = keys.get("auth")
+
+    if not endpoint or not p256dh or not auth_key:
+        raise HTTPException(status_code=400, detail="Invalid subscription data")
+
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id
+        """, uuid.UUID(user_id), endpoint, p256dh, auth_key)
+
+    return {"ok": True}
+
+
+@app.delete("/api/push/unsubscribe")
+async def unsubscribe_push(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    try:
+        user_id = decode_token(auth_header[7:])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM push_subscriptions WHERE user_id = $1",
+            uuid.UUID(user_id),
+        )
+    return {"ok": True}
+
 # ---------------------------------------------------------------------------
 # WebSocket
 # ---------------------------------------------------------------------------
@@ -279,7 +416,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_text(json.dumps({
             "type": "BOARDS_DATA",
             "payload": {
-                "boards": [row_to_board(r) for r in board_rows],
+                "boards":  [row_to_board(r)  for r in board_rows],
                 "columns": [row_to_column(r) for r in column_rows],
             },
         }))
@@ -296,9 +433,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
 async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
     try:
-        data = json.loads(raw)
+        data     = json.loads(raw)
         msg_type = data.get("type")
-        payload = data.get("payload", {})
+        payload  = data.get("payload", {})
 
         if msg_type == "GET_TODOS":
             async with pool.acquire() as conn:
@@ -327,7 +464,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             await websocket.send_text(json.dumps({
                 "type": "BOARDS_DATA",
                 "payload": {
-                    "boards": [row_to_board(r) for r in board_rows],
+                    "boards":  [row_to_board(r)  for r in board_rows],
                     "columns": [row_to_column(r) for r in column_rows],
                 },
             }))
@@ -340,28 +477,30 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 }))
                 return
             description = payload.get("description", "").strip()
-            important = bool(payload.get("important", False))
-            due_date = parse_due_date(payload.get("dueDate"))
-            priority = payload.get("priority", "normal")
+            important   = bool(payload.get("important", False))
+            due_date    = parse_due_date(payload.get("dueDate"))
+            priority    = payload.get("priority", "normal")
             if priority not in ("low", "normal", "high"):
                 priority = "normal"
-            tags = [t for t in payload.get("tags", []) if t]
-            board_id = payload.get("boardId")
-            column_id = payload.get("columnId")
-            position = int(payload.get("position", 0))
+            tags        = [t for t in payload.get("tags", []) if t]
+            board_id    = payload.get("boardId")
+            column_id   = payload.get("columnId")
+            position    = int(payload.get("position", 0))
+            reminder_at = parse_reminder(payload.get("reminderAt"))
 
-            board_uuid = uuid.UUID(board_id) if board_id else None
+            board_uuid  = uuid.UUID(board_id)  if board_id  else None
             column_uuid = uuid.UUID(column_id) if column_id else None
 
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
                     f"""INSERT INTO todos
-                           (user_id, title, description, important, due_date, priority, tags, board_id, column_id, position)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                           (user_id, title, description, important, due_date, priority, tags,
+                            board_id, column_id, position, reminder_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                         RETURNING {TODO_COLS}""",
                     uuid.UUID(user_id), title, description,
                     important, due_date, priority, tags,
-                    board_uuid, column_uuid, position,
+                    board_uuid, column_uuid, position, reminder_at,
                 )
             await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": row_to_todo(row)})
 
@@ -391,6 +530,9 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 updates["priority"] = p if p in ("low", "normal", "high") else "normal"
             if "tags" in payload:
                 updates["tags"] = [t for t in payload["tags"] if t]
+            if "reminderAt" in payload:
+                updates["reminder_at"]   = parse_reminder(payload["reminderAt"])
+                updates["reminder_sent"] = False  # reset sent flag on new reminder
             if not updates:
                 return
 
@@ -459,7 +601,6 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                     uuid.UUID(user_id), name, description,
                 )
                 board_id = board_row["id"]
-                # Create 3 default columns
                 col_rows = []
                 for i, col_name in enumerate(["To Do", "In Progress", "Done"]):
                     col_row = await conn.fetchrow(
@@ -473,7 +614,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             await broadcast_to_user(user_id, {
                 "type": "BOARD_CREATED",
                 "payload": {
-                    "board": row_to_board(board_row),
+                    "board":   row_to_board(board_row),
                     "columns": [row_to_column(r) for r in col_rows],
                 },
             })
@@ -528,7 +669,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
 
         elif msg_type == "CREATE_COLUMN":
             board_id = payload.get("boardId")
-            name = payload.get("name", "").strip()
+            name     = payload.get("name", "").strip()
             if not board_id or not name:
                 await websocket.send_text(json.dumps({
                     "type": "ERROR", "payload": {"message": "boardId and name are required"},
@@ -536,7 +677,6 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 return
             position = int(payload.get("position", 0))
 
-            # Verify the board belongs to this user
             async with pool.acquire() as conn:
                 board = await conn.fetchrow(
                     "SELECT id FROM boards WHERE id = $1 AND user_id = $2",
@@ -573,10 +713,10 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             if not updates:
                 return
 
-            # Verify ownership via board
             async with pool.acquire() as conn:
                 col = await conn.fetchrow(
-                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id "
+                    "WHERE c.id = $1 AND b.user_id = $2",
                     uuid.UUID(column_id), uuid.UUID(user_id),
                 )
                 if not col:
@@ -590,8 +730,7 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
 
                 sql = (
                     f"UPDATE columns SET {', '.join(set_parts)} "
-                    f"WHERE id = $1 "
-                    f"RETURNING {COLUMN_COLS}"
+                    f"WHERE id = $1 RETURNING {COLUMN_COLS}"
                 )
                 row = await conn.fetchrow(sql, *values)
 
@@ -602,32 +741,31 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             column_id = payload.get("id")
             if not column_id:
                 return
-            # Verify ownership via board, then delete (todos get column_id=NULL via FK ON DELETE SET NULL)
             async with pool.acquire() as conn:
                 col = await conn.fetchrow(
-                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id "
+                    "WHERE c.id = $1 AND b.user_id = $2",
                     uuid.UUID(column_id), uuid.UUID(user_id),
                 )
                 if not col:
                     return
                 result = await conn.execute(
-                    "DELETE FROM columns WHERE id = $1",
-                    uuid.UUID(column_id),
+                    "DELETE FROM columns WHERE id = $1", uuid.UUID(column_id),
                 )
             if result == "DELETE 1":
                 await broadcast_to_user(user_id, {"type": "COLUMN_DELETED", "payload": {"id": column_id}})
 
         elif msg_type == "MOVE_CARD":
-            todo_id = payload.get("id")
+            todo_id   = payload.get("id")
             column_id = payload.get("columnId")
-            position = int(payload.get("position", 0))
+            position  = int(payload.get("position", 0))
             if not todo_id or not column_id:
                 return
 
             async with pool.acquire() as conn:
-                # Verify the column belongs to a board owned by this user
                 col = await conn.fetchrow(
-                    "SELECT c.id, c.board_id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    "SELECT c.id, c.board_id FROM columns c JOIN boards b ON b.id = c.board_id "
+                    "WHERE c.id = $1 AND b.user_id = $2",
                     uuid.UUID(column_id), uuid.UUID(user_id),
                 )
                 if not col:
@@ -636,7 +774,8 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                     f"""UPDATE todos SET column_id = $2, board_id = $3, position = $4
                         WHERE id = $1 AND user_id = $5
                         RETURNING {TODO_COLS}""",
-                    uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"], position, uuid.UUID(user_id),
+                    uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"],
+                    position, uuid.UUID(user_id),
                 )
             if row:
                 await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})

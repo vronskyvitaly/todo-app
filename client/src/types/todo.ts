@@ -11,6 +11,8 @@ export interface Todo {
   boardId: string | null;
   columnId: string | null;
   position: number;
+  reminderAt: string | null;
+  reminderSent: boolean;
 }
 
 export interface Board {
