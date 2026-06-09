@@ -129,7 +129,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
 
       {/* Cards + clickable empty area */}
       <div
-        className="flex-1 px-3 pb-2 space-y-2 min-h-[4rem] cursor-pointer"
+        className="flex-1 px-3 pb-2 space-y-2 min-h-[4rem] cursor-pointer overflow-y-auto"
         onClick={(e) => {
           // Only trigger if clicking the area itself, not a card
           if (e.target === e.currentTarget) openAddCard();
