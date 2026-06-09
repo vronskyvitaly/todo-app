@@ -207,10 +207,18 @@ async def broadcast_to_user(user_id: str, message: dict) -> None:
 async def check_reminders() -> None:
     """Runs every 30 s — sends push notifications for due reminders."""
     if not VAPID_PRIVATE_KEY or not pool:
+        print("[reminders] skipped: no VAPID key or pool")
         return
     now = datetime.datetime.now(timezone.utc)
 
     async with pool.acquire() as conn:
+        # Debug: total subscriptions
+        sub_count = await conn.fetchval("SELECT COUNT(*) FROM push_subscriptions")
+        pending = await conn.fetchval(
+            "SELECT COUNT(*) FROM todos WHERE reminder_at IS NOT NULL AND reminder_sent=FALSE AND completed=FALSE"
+        )
+        print(f"[reminders] tick subs={sub_count} pending_reminders={pending} now={now.isoformat()}")
+
         rows = await conn.fetch("""
             SELECT t.id, t.title, ps.endpoint, ps.p256dh, ps.auth
             FROM todos t
@@ -219,6 +227,8 @@ async def check_reminders() -> None:
               AND t.reminder_sent = FALSE
               AND t.completed     = FALSE
         """, now)
+
+        print(f"[reminders] due now: {len(rows)}")
 
         for row in rows:
             try:
@@ -235,15 +245,17 @@ async def check_reminders() -> None:
                     vapid_private_key=VAPID_PRIVATE_KEY,
                     vapid_claims={"sub": VAPID_EMAIL},
                 )
+                print(f"[reminders] sent push for todo={row['id']}")
             except WebPushException as exc:
+                print(f"[reminders] WebPushException todo={row['id']}: {exc} response={exc.response.status_code if exc.response else None}")
                 # Subscription expired or invalid — remove it
                 if exc.response and exc.response.status_code in (404, 410):
                     await conn.execute(
                         "DELETE FROM push_subscriptions WHERE endpoint = $1",
                         row["endpoint"],
                     )
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[reminders] Exception todo={row['id']}: {exc}")
 
             # Mark sent regardless (avoid re-sending on failure)
             await conn.execute(
@@ -323,6 +335,44 @@ async def login(body: LoginRequest):
 @app.get("/api/push/vapid-key")
 async def get_vapid_key():
     return {"publicKey": VAPID_PUBLIC_KEY}
+
+
+@app.get("/api/push/debug")
+async def debug_push(request: Request):
+    """Temporary debug endpoint — shows subscription + reminder state."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    try:
+        user_id = decode_token(auth_header[7:])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    async with pool.acquire() as conn:
+        subs = await conn.fetchval(
+            "SELECT COUNT(*) FROM push_subscriptions WHERE user_id = $1",
+            uuid.UUID(user_id),
+        )
+        reminders = await conn.fetch(
+            """SELECT id, title, reminder_at, reminder_sent, completed
+               FROM todos WHERE user_id = $1 AND reminder_at IS NOT NULL
+               ORDER BY reminder_at DESC LIMIT 10""",
+            uuid.UUID(user_id),
+        )
+    return {
+        "subscriptions": subs,
+        "vapid_configured": bool(VAPID_PRIVATE_KEY),
+        "reminders": [
+            {
+                "id": str(r["id"]),
+                "title": r["title"],
+                "reminder_at": r["reminder_at"].isoformat() if r["reminder_at"] else None,
+                "reminder_sent": r["reminder_sent"],
+                "completed": r["completed"],
+            }
+            for r in reminders
+        ],
+    }
 
 
 @app.post("/api/push/subscribe")
