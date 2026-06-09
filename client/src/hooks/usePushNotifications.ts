@@ -9,6 +9,11 @@ function getApiUrl(): string {
   return `https://api.${host.split(".").slice(1).join(".")}`;
 }
 
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
 export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
   const [subscribed, setSubscribed] = useState(false);
@@ -28,6 +33,9 @@ export function usePushNotifications() {
   }, []);
 
   const subscribe = async () => {
+    // Добавьте эту проверку в начало функции
+    if (typeof window === "undefined") return;
+
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!("serviceWorker" in navigator) || !vapidKey) return;
 
@@ -36,13 +44,12 @@ export function usePushNotifications() {
     if (perm !== "granted") return;
 
     const reg = await navigator.serviceWorker.ready;
-    // applicationServerKey accepts string (base64url) directly per W3C spec
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: vapidKey,
     });
 
-    const token = localStorage.getItem("token");
+    const token = getToken(); // Используйте безопасную функцию
     await fetch(`${getApiUrl()}/api/push/subscribe`, {
       method: "POST",
       headers: {
@@ -55,13 +62,16 @@ export function usePushNotifications() {
   };
 
   const unsubscribe = async () => {
+    // Добавьте эту проверку в начало функции
+    if (typeof window === "undefined") return;
+
     if (!("serviceWorker" in navigator)) return;
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
 
     await sub.unsubscribe();
-    const token = localStorage.getItem("token");
+    const token = getToken(); // Используйте безопасную функцию
     await fetch(`${getApiUrl()}/api/push/unsubscribe`, {
       method: "DELETE",
       headers: {
