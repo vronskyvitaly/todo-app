@@ -1,101 +1,80 @@
-# TodoList — Real-time Todo App
+# TodoList
 
-Full-stack todo application with real-time sync via WebSocket, user authentication, and PostgreSQL persistence.
+A real-time task manager with Kanban boards, built with Next.js and FastAPI. All state syncs instantly across browser tabs via WebSocket — no polling, no page refreshes.
 
-**Live:** https://todo.vronskyvitaly.ru
+**Live demo:** https://todo.vronskyvitaly.ru
 
 ---
 
 ## Features
 
-- Real-time sync across browser tabs via WebSocket
-- JWT authentication (register / login)
-- Create, edit, delete, and toggle tasks
-- Priority levels: Low, Normal, High
-- Mark tasks as Important
-- Due dates with overdue highlighting
-- Tags (comma-separated)
-- Filter by: All, Active, Completed, Important
-- Clear completed tasks in one click
-- Persisted in PostgreSQL per user
+**My Tasks**
+- Create tasks with title, description, priority (low / normal / high), due date, tags, and importance flag
+- Filter by All / Active / Completed / Important
+- Analytics dashboard — completion rate, overdue count, high-priority count
+- Real-time sync across tabs
+
+**Kanban Boards**
+- Create boards with custom columns
+- Drag & drop cards between columns (native HTML5, no extra dependencies)
+- Click any column to instantly add a card inline
+- Add, rename, and delete columns; rename and delete boards
+
+**General**
+- JWT authentication — register and login
+- All data persisted in PostgreSQL per user account
+- Skeleton loaders on initial data fetch, no layout shift on reload
 
 ---
 
 ## Stack
 
-| Layer    | Technology                                              |
-|----------|---------------------------------------------------------|
-| Client   | Next.js 14, Redux Toolkit, React Hook Form, Zod, Tailwind CSS |
-| Server   | FastAPI, asyncpg, python-jose, bcrypt                   |
-| Database | PostgreSQL                                              |
-| Deploy   | Docker, Coolify, Traefik                                |
-
----
-
-## WebSocket Protocol
-
-```
-Client → Server                               Server → Client (broadcast)
-──────────────────────────────────────────    ────────────────────────────
-{ type: "GET_TODOS" }                   →     { type: "TODOS_LIST",   payload: Todo[]  }
-{ type: "CREATE_TODO", payload: {...} } →     { type: "TODO_CREATED", payload: Todo    }
-{ type: "UPDATE_TODO", payload: {...} } →     { type: "TODO_UPDATED", payload: Todo    }
-{ type: "DELETE_TODO", payload: {id} }  →     { type: "TODO_DELETED", payload: {id}    }
-{ type: "TOGGLE_TODO", payload: {id} }  →     { type: "TODO_UPDATED", payload: Todo    }
-```
-
-### Todo object
-
-```ts
-{
-  id:          string
-  title:       string
-  description: string
-  completed:   boolean
-  important:   boolean
-  priority:    "low" | "normal" | "high"
-  dueDate:     string | null   // ISO date, e.g. "2025-06-01"
-  tags:        string[]
-  createdAt:   string          // ISO datetime
-}
-```
+| Layer    | Technology |
+|----------|------------|
+| Frontend | Next.js 14 (App Router), Redux Toolkit, Tailwind CSS, React Hook Form + Zod |
+| Backend  | FastAPI, asyncpg, python-jose, bcrypt |
+| Database | PostgreSQL |
+| Deploy   | Docker, Coolify, Traefik |
 
 ---
 
 ## Local Development
 
-### Prerequisites
+**Prerequisites:** Node.js 20+, Python 3.12+, PostgreSQL
 
-- Node.js 20+
-- Python 3.12+
-- PostgreSQL running on `localhost:5432`
+### 1. Database
 
-### Server
+```bash
+brew services start postgresql@15   # macOS
+createdb todolist
+```
+
+### 2. Server
 
 ```bash
 cd server
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/todolist python main.py
+pip3 install -r requirements.txt
+DATABASE_URL="postgresql://$(whoami)@localhost:5432/todolist" python3 main.py
+# → http://localhost:8000
 ```
 
-### Client
+Tables are created automatically on first startup.
+
+### 3. Client
 
 ```bash
 cd client
 npm install
 npm run dev
+# → http://localhost:3000
 ```
-
-Open http://localhost:3000
 
 ### Environment variables
 
-| Variable       | Where  | Description                            | Default                                          |
-|----------------|--------|----------------------------------------|--------------------------------------------------|
-| `DATABASE_URL` | server | PostgreSQL connection string           | `postgresql://postgres:postgres@localhost:5432/todolist` |
-| `SECRET_KEY`   | server | JWT signing secret                     | `change-me-in-production-super-secret-key`       |
+| Variable       | Service | Default |
+|----------------|---------|---------|
+| `DATABASE_URL` | server  | `postgresql://postgres:postgres@localhost:5432/todolist` |
+| `SECRET_KEY`   | server  | `change-me-in-production-super-secret-key` |
 
 ---
 
@@ -105,9 +84,44 @@ Open http://localhost:3000
 # Server
 docker build -t todolist-server ./server
 
-# Client
+# Client (API URL resolved at runtime in dev; set at build time for Docker)
 docker build \
   --build-arg NEXT_PUBLIC_API_URL=https://api.example.com \
   --build-arg NEXT_PUBLIC_WS_URL=wss://api.example.com/ws \
   -t todolist-client ./client
 ```
+
+---
+
+## Architecture
+
+Every data operation goes through a single persistent WebSocket (`/ws?token=JWT`). HTTP is only used for `/api/register` and `/api/login`. The server broadcasts updates to **all open connections** for a user, so multiple tabs stay in sync automatically.
+
+```
+Browser tab 1 ──┐                          ┌── Browser tab 2
+                 ├── WebSocket /ws?token ───┤
+                 │                          │
+             FastAPI server
+                 │
+             PostgreSQL
+```
+
+The Next.js client uses a custom Redux middleware (`wsMiddleware`) that owns the WebSocket singleton, translates outgoing Redux actions into WS messages, and dispatches Redux actions for incoming messages.
+
+**WebSocket protocol**
+
+```
+Client → Server                                Server → Client
+──────────────────────────────────────         ────────────────────────────────────────
+{ type: "CREATE_TODO",  payload: {...} }   →   { type: "TODO_CREATED",    payload: Todo      }
+{ type: "UPDATE_TODO",  payload: {...} }   →   { type: "TODO_UPDATED",    payload: Todo      }
+{ type: "DELETE_TODO",  payload: {id}  }   →   { type: "TODO_DELETED",    payload: {id}      }
+{ type: "TOGGLE_TODO",  payload: {id}  }   →   { type: "TODO_UPDATED",    payload: Todo      }
+{ type: "MOVE_CARD",    payload: {...} }   →   { type: "TODO_UPDATED",    payload: Todo      }
+{ type: "CREATE_BOARD", payload: {...} }   →   { type: "BOARD_CREATED",   payload: {board, columns} }
+{ type: "DELETE_BOARD", payload: {id}  }   →   { type: "BOARD_DELETED",   payload: {id}      }
+{ type: "CREATE_COLUMN",payload: {...} }   →   { type: "COLUMN_CREATED",  payload: Column    }
+{ type: "DELETE_COLUMN",payload: {id}  }   →   { type: "COLUMN_DELETED",  payload: {id}      }
+```
+
+On connect the server immediately sends `TODOS_LIST` + `BOARDS_DATA` to hydrate the client.
