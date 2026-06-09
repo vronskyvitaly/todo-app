@@ -10,3 +10,6 @@ client/.env.local
 
 # OS
 .DS_Store
+
+CLAUDE.md
+.claude
