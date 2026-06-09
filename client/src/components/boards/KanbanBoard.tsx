@@ -88,13 +88,15 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
       {/* Add column modal — fixed, never clipped by scroll */}
       {addingColumn && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => { setAddingColumn(false); setNewColumnName(""); }}
         >
           <div
-            className="w-full max-w-sm bg-slate-800 border border-slate-700/60 rounded-2xl p-6 shadow-2xl mx-4"
+            className="w-full sm:max-w-sm bg-slate-800 border border-slate-700/60 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl sm:mx-4 max-h-[90dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Drag handle for mobile bottom sheet */}
+            <div className="sm:hidden w-10 h-1 bg-slate-600 rounded-full mx-auto mb-4" />
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-slate-200">New Column</h2>
               <button

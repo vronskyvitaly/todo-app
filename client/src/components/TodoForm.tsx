@@ -45,13 +45,15 @@ export default function TodoForm({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-slate-800 border border-slate-700/60 rounded-2xl p-6 shadow-2xl animate-slide-down mx-4"
+        className="w-full sm:max-w-md bg-slate-800 border border-slate-700/60 rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl sm:mx-4 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle for mobile bottom sheet */}
+        <div className="sm:hidden w-10 h-1 bg-slate-600 rounded-full mx-auto mb-4" />
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-slate-200">New Task</h2>
           <button
@@ -129,7 +131,7 @@ export default function TodoForm({ onClose }: Props) {
           </div>
 
           {/* Due date + Tags */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 space-y-1">
               <label className="block text-xs font-medium text-slate-400">Due date</label>
               <input
