@@ -30,7 +30,17 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Reconnect immediately when app comes back to foreground (iOS PWA)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        const t = localStorage.getItem("token");
+        if (t) dispatch({ type: WS_CONNECT, payload: { token: t } });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
       dispatch({ type: WS_DISCONNECT });
     };
   }, [dispatch]);

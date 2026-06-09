@@ -17,31 +17,49 @@ export const WS_DISCONNECT = "ws/disconnect";
 export const WS_SEND = "ws/send";
 
 let socket: WebSocket | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectDelay = 1000;      // starts at 1s, doubles each attempt, caps at 30s
+let shouldReconnect = false;
+let lastToken = "";
+
+function clearReconnect() {
+  if (reconnectTimer !== null) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function buildUrl(token: string): string {
+  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+  const apiHost = isLocal
+    ? "localhost:8000"
+    : `api.${host.split(".").slice(1).join(".")}`;
+  const proto = isLocal ? "ws" : "wss";
+  const base = `${proto}://${apiHost}/ws`;
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+}
 
 export const wsMiddleware: Middleware = (store) => (next) => (action: unknown) => {
   const act = action as { type: string; payload?: unknown };
 
   if (act.type === WS_CONNECT) {
+    clearReconnect();
+
+    const payload = act.payload as { token?: string } | undefined;
+    const token = payload?.token ?? lastToken;
+    lastToken = token;
+    shouldReconnect = true;
+
     if (socket) {
+      socket.onclose = null; // prevent reconnect loop while closing old socket
       socket.close();
     }
 
-    const payload = act.payload as { token?: string } | undefined;
-    const token = payload?.token ?? "";
-
-    const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
-    const isLocal = host === "localhost" || host === "127.0.0.1";
-    const apiHost = isLocal
-      ? "localhost:8000"
-      : `api.${host.split(".").slice(1).join(".")}`;
-    const wsProto = isLocal ? "ws" : "wss";
-    const baseUrl = `${wsProto}://${apiHost}/ws`;
-
-    const url = token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
-
-    socket = new WebSocket(url);
+    socket = new WebSocket(buildUrl(token));
 
     socket.onopen = () => {
+      reconnectDelay = 1000; // reset backoff on success
       store.dispatch(setConnected(true));
     };
 
@@ -99,6 +117,12 @@ export const wsMiddleware: Middleware = (store) => (next) => (action: unknown) =
 
     socket.onclose = () => {
       store.dispatch(setConnected(false));
+      if (shouldReconnect && lastToken) {
+        reconnectTimer = setTimeout(() => {
+          store.dispatch({ type: WS_CONNECT, payload: { token: lastToken } });
+        }, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
+      }
     };
 
     socket.onerror = () => {
@@ -108,8 +132,13 @@ export const wsMiddleware: Middleware = (store) => (next) => (action: unknown) =
   }
 
   if (act.type === WS_DISCONNECT) {
-    socket?.close();
-    socket = null;
+    shouldReconnect = false;
+    clearReconnect();
+    if (socket) {
+      socket.onclose = null; // don't trigger reconnect
+      socket.close();
+      socket = null;
+    }
     store.dispatch(setConnected(false));
   }
 
