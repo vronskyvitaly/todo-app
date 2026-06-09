@@ -84,11 +84,11 @@ export default function EditModal() {
             <label className="block text-sm font-medium text-slate-300">
               Title <span className="text-red-400">*</span>
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               {...register("title")}
-              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-slate-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
+              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
                 ${errors.title ? "border-red-500/70" : "border-slate-700/60"}`}
             />
             {errors.title && (
@@ -101,9 +101,9 @@ export default function EditModal() {
               Description
             </label>
             <textarea
-              rows={2}
+              rows={3}
               {...register("description")}
-              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-slate-100
+              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
                 ${errors.description ? "border-red-500/70" : "border-slate-700/60"}`}
             />
