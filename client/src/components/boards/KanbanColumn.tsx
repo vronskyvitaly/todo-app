@@ -12,9 +12,10 @@ interface Props {
   draggingId: string | null;
   onDragStart: (id: string) => void;
   onDrop: (columnId: string, position: number) => void;
+  onTouchDragEnd: () => void;
 }
 
-export default function KanbanColumn({ column, todos, draggingId, onDragStart, onDrop }: Props) {
+export default function KanbanColumn({ column, todos, draggingId, onDragStart, onDrop, onTouchDragEnd }: Props) {
   const dispatch = useAppDispatch();
   const [isOver, setIsOver] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
@@ -77,6 +78,8 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
 
   return (
     <div
+      data-column-id={column.id}
+      data-column-count={sorted.length}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -137,6 +140,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
             key={todo.id}
             todo={todo}
             onDragStart={onDragStart}
+            onTouchDragEnd={onTouchDragEnd}
             dragging={draggingId === todo.id}
           />
         ))}

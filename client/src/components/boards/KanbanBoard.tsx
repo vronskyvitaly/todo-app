@@ -65,6 +65,7 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
             draggingId={draggingId}
             onDragStart={handleDragStart}
             onDrop={handleDrop}
+            onTouchDragEnd={handleDragEnd}
           />
         ))}
 

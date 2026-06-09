@@ -26,3 +26,9 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
 }
+
+/* Touch drag-over highlight for Kanban columns */
+[data-column-id].touch-drag-over {
+  border-color: rgb(99 102 241 / 0.7) !important;
+  background-color: rgb(99 102 241 / 0.08) !important;
+}

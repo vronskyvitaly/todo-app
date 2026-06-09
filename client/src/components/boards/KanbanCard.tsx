@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { Todo } from "@/types/todo";
 import { useAppDispatch } from "@/store";
 import { setEditingId } from "@/store/todosSlice";
@@ -8,11 +9,137 @@ import { WS_SEND } from "@/store/wsMiddleware";
 interface Props {
   todo: Todo;
   onDragStart: (id: string) => void;
+  onTouchDragEnd: () => void;
   dragging: boolean;
 }
 
-export default function KanbanCard({ todo, onDragStart, dragging }: Props) {
+export default function KanbanCard({ todo, onDragStart, onTouchDragEnd, dragging }: Props) {
   const dispatch = useAppDispatch();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Always-fresh ref so event listeners (attached once) see latest props/dispatch
+  const cbRef = useRef({ onDragStart, onTouchDragEnd, dispatch, todoId: todo.id });
+  cbRef.current = { onDragStart, onTouchDragEnd, dispatch, todoId: todo.id };
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+
+    let ghost: HTMLDivElement | null = null;
+    let lastCol: Element | null = null;
+    let touchStart = { x: 0, y: 0 };
+    let touchOffset = { x: 0, y: 0 };
+    let hasMoved = false;
+
+    const cleanup = () => {
+      if (ghost) { document.body.removeChild(ghost); ghost = null; }
+      lastCol?.classList.remove("touch-drag-over");
+      lastCol = null;
+      hasMoved = false;
+      cbRef.current.onTouchDragEnd();
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      // Don't hijack taps on interactive buttons
+      if ((e.target as HTMLElement).closest("button")) return;
+      const touch = e.touches[0];
+      const rect = el.getBoundingClientRect();
+      touchStart = { x: touch.clientX, y: touch.clientY };
+      touchOffset = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      hasMoved = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStart.x;
+      const dy = touch.clientY - touchStart.y;
+
+      // Wait until finger has moved ≥8px before starting drag (allow taps)
+      if (!hasMoved && Math.sqrt(dx * dx + dy * dy) < 8) return;
+
+      e.preventDefault(); // block page scroll while dragging
+
+      if (!hasMoved) {
+        hasMoved = true;
+        cbRef.current.onDragStart(cbRef.current.todoId);
+
+        // Create visual ghost that follows the finger
+        const rect = el.getBoundingClientRect();
+        ghost = el.cloneNode(true) as HTMLDivElement;
+        Object.assign(ghost.style, {
+          position: "fixed",
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+          pointerEvents: "none",
+          zIndex: "9999",
+          opacity: "0.85",
+          transform: "scale(1.05) rotate(1.5deg)",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+          transition: "none",
+          borderRadius: "0.75rem",
+        });
+        document.body.appendChild(ghost);
+      }
+
+      // Move ghost to finger position
+      if (ghost) {
+        ghost.style.left = `${touch.clientX - touchOffset.x}px`;
+        ghost.style.top = `${touch.clientY - touchOffset.y}px`;
+      }
+
+      // Detect which column is under the finger
+      if (ghost) ghost.style.visibility = "hidden";
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (ghost) ghost.style.visibility = "";
+
+      const col = target?.closest("[data-column-id]") ?? null;
+      if (col !== lastCol) {
+        lastCol?.classList.remove("touch-drag-over");
+        col?.classList.add("touch-drag-over");
+        lastCol = col;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!hasMoved) return; // pure tap — let click events fire normally
+
+      const touch = e.changedTouches[0];
+
+      // Remove ghost and highlight before hit-test
+      if (ghost) { document.body.removeChild(ghost); ghost = null; }
+      lastCol?.classList.remove("touch-drag-over");
+      lastCol = null;
+
+      cbRef.current.onTouchDragEnd(); // clears draggingId in Board
+
+      // Find column under finger
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const colEl = target?.closest("[data-column-id]");
+      if (colEl) {
+        const columnId = colEl.getAttribute("data-column-id")!;
+        const count = parseInt(colEl.getAttribute("data-column-count") || "0");
+        cbRef.current.dispatch({
+          type: WS_SEND,
+          payload: { type: "MOVE_CARD", payload: { id: cbRef.current.todoId, columnId, position: count } },
+        });
+      }
+
+      hasMoved = false;
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", cleanup, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", cleanup);
+    };
+  }, []);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.effectAllowed = "move";
@@ -39,9 +166,11 @@ export default function KanbanCard({ todo, onDragStart, dragging }: Props) {
 
   return (
     <div
+      ref={cardRef}
       draggable
       onDragStart={handleDragStart}
-      className={`group bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 cursor-grab active:cursor-grabbing
+      className={`group bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3
+        cursor-grab active:cursor-grabbing select-none
         transition-all duration-150 hover:border-slate-600/60
         ${dragging ? "opacity-40 scale-95" : ""}`}
     >
