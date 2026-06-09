@@ -32,7 +32,7 @@ export default function TodoForm({ onClose }: Props) {
     defaultValues: { title: "", description: "", important: false, dueDate: null, priority: "normal", tags: "" },
   });
 
-  const important = watch("important");
+  const { important, dueDate: watchedDueDate } = watch();
 
   const onSubmit = (data: TodoFormValues) => {
     dispatch({
@@ -132,7 +132,7 @@ export default function TodoForm({ onClose }: Props) {
 
           {/* Due date + Tags */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1">
               <label className="block text-xs font-medium text-slate-400">
                 <span className="flex items-center gap-1">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -141,23 +141,31 @@ export default function TodoForm({ onClose }: Props) {
                   Due date
                 </span>
               </label>
-              <input
-                type="date"
-                disabled={!connected}
-                {...register("dueDate")}
-                className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors [color-scheme:dark]
-                  disabled:opacity-40 disabled:cursor-not-allowed"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  disabled={!connected}
+                  {...register("dueDate")}
+                  style={{ colorScheme: "dark" }}
+                  className="w-full min-w-0 rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
+                    disabled:opacity-40 disabled:cursor-not-allowed"
+                />
+                {!watchedDueDate && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center px-3">
+                    <span className="text-sm text-slate-500">Tap to select…</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1">
               <label className="block text-xs font-medium text-slate-400">Tags (comma separated)</label>
               <input
                 type="text"
                 placeholder="work, personal..."
                 disabled={!connected}
                 {...register("tags")}
-                className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2 text-sm text-slate-100
+                className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
                   placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
                   disabled:opacity-40 disabled:cursor-not-allowed"
               />
