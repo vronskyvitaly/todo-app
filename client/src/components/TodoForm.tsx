@@ -133,28 +133,44 @@ export default function TodoForm({ onClose }: Props) {
           {/* Due date + Tags */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 min-w-0 space-y-1">
-              <label className="block text-xs font-medium text-slate-400">
-                <span className="flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <label className="block text-xs font-medium text-slate-400">Due date</label>
+              <div className="relative">
+                {/* Styled button — full control over appearance */}
+                <div className={`w-full rounded-xl border px-4 py-2.5 flex items-center gap-2 text-sm transition-colors
+                  ${!connected ? "opacity-40" : ""}
+                  ${watchedDueDate
+                    ? "bg-slate-900/70 border-indigo-500/40 text-slate-100"
+                    : "bg-slate-900/70 border-slate-700/60 text-slate-500"
+                  }`}>
+                  <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  Due date
-                </span>
-              </label>
-              <div className="relative w-full overflow-hidden">
+                  <span className="flex-1">
+                    {watchedDueDate
+                      ? new Date(watchedDueDate + "T12:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+                      : "Select date…"}
+                  </span>
+                </div>
+                {/* Invisible native input — overlaps button, opens native date picker on tap */}
                 <input
                   type="date"
                   disabled={!connected}
                   {...register("dueDate")}
-                  style={{ colorScheme: "dark", maxWidth: "100%" }}
-                  className="w-full min-w-0 rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
-                    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
-                    disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ colorScheme: "dark", opacity: 0, position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 1 }}
                 />
-                {!watchedDueDate && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center px-3">
-                    <span className="text-sm text-slate-500">Tap to select…</span>
-                  </div>
+                {/* Clear button — above native input */}
+                {watchedDueDate && (
+                  <button
+                    type="button"
+                    disabled={!connected}
+                    onClick={() => setValue("dueDate", null)}
+                    style={{ zIndex: 2 }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
             </div>
