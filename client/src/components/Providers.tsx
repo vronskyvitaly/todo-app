@@ -6,6 +6,7 @@ import { store, useAppDispatch } from "@/store";
 import { setCredentials } from "@/store/authSlice";
 import { WS_CONNECT, WS_DISCONNECT } from "@/store/wsMiddleware";
 import type { AuthUser } from "@/types/todo";
+import PullToRefresh from "@/components/PullToRefresh";
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -45,7 +46,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     };
   }, [dispatch]);
 
-  return <>{children}</>;
+  return <PullToRefresh>{children}</PullToRefresh>;
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
