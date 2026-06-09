@@ -32,7 +32,9 @@ pool: asyncpg.Pool | None = None
 # ---------------------------------------------------------------------------
 # DB lifespan
 # ---------------------------------------------------------------------------
-TODO_COLS = "id, title, description, completed, created_at, important, due_date, priority, tags"
+TODO_COLS = "id, title, description, completed, created_at, important, due_date, priority, tags, board_id, column_id, position"
+BOARD_COLS = "id, user_id, name, description, created_at"
+COLUMN_COLS = "id, board_id, name, position, created_at"
 
 
 @asynccontextmanager
@@ -46,6 +48,22 @@ async def lifespan(app: FastAPI):
                 email           TEXT UNIQUE NOT NULL,
                 hashed_password TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS boards (
+                id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                name        TEXT        NOT NULL,
+                description TEXT        NOT NULL DEFAULT '',
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_boards_user_id ON boards(user_id);
+            CREATE TABLE IF NOT EXISTS columns (
+                id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+                board_id    UUID        NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+                name        TEXT        NOT NULL,
+                position    INTEGER     NOT NULL DEFAULT 0,
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_columns_board_id ON columns(board_id);
             CREATE TABLE IF NOT EXISTS todos (
                 id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -62,6 +80,9 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_date  DATE;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS priority  TEXT NOT NULL DEFAULT 'normal';
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS tags      TEXT[] NOT NULL DEFAULT '{}';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS board_id  UUID REFERENCES boards(id) ON DELETE SET NULL;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS column_id UUID REFERENCES columns(id) ON DELETE SET NULL;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS position  INTEGER NOT NULL DEFAULT 0;
         """)
     yield
     await pool.close()
@@ -101,6 +122,29 @@ def row_to_todo(r: asyncpg.Record) -> dict:
         "dueDate": r["due_date"].isoformat() if r["due_date"] else None,
         "priority": r["priority"],
         "tags": list(r["tags"]),
+        "boardId": str(r["board_id"]) if r["board_id"] else None,
+        "columnId": str(r["column_id"]) if r["column_id"] else None,
+        "position": r["position"],
+    }
+
+
+def row_to_board(r: asyncpg.Record) -> dict:
+    return {
+        "id": str(r["id"]),
+        "userId": str(r["user_id"]),
+        "name": r["name"],
+        "description": r["description"],
+        "createdAt": r["created_at"].isoformat(),
+    }
+
+
+def row_to_column(r: asyncpg.Record) -> dict:
+    return {
+        "id": str(r["id"]),
+        "boardId": str(r["board_id"]),
+        "name": r["name"],
+        "position": r["position"],
+        "createdAt": r["created_at"].isoformat(),
     }
 
 
@@ -212,13 +256,32 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         async with pool.acquire() as conn:
-            rows = await conn.fetch(
+            todo_rows = await conn.fetch(
                 f"SELECT {TODO_COLS} FROM todos WHERE user_id = $1 ORDER BY created_at ASC",
                 uuid.UUID(user_id),
             )
+            board_rows = await conn.fetch(
+                f"SELECT {BOARD_COLS} FROM boards WHERE user_id = $1 ORDER BY created_at ASC",
+                uuid.UUID(user_id),
+            )
+            board_ids = [r["id"] for r in board_rows]
+            column_rows = []
+            if board_ids:
+                column_rows = await conn.fetch(
+                    f"SELECT {COLUMN_COLS} FROM columns WHERE board_id = ANY($1) ORDER BY position ASC",
+                    board_ids,
+                )
+
         await websocket.send_text(json.dumps({
             "type": "TODOS_LIST",
-            "payload": [row_to_todo(r) for r in rows],
+            "payload": [row_to_todo(r) for r in todo_rows],
+        }))
+        await websocket.send_text(json.dumps({
+            "type": "BOARDS_DATA",
+            "payload": {
+                "boards": [row_to_board(r) for r in board_rows],
+                "columns": [row_to_column(r) for r in column_rows],
+            },
         }))
 
         async for raw in websocket.iter_text():
@@ -248,6 +311,27 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 "payload": [row_to_todo(r) for r in rows],
             }))
 
+        elif msg_type == "GET_BOARDS":
+            async with pool.acquire() as conn:
+                board_rows = await conn.fetch(
+                    f"SELECT {BOARD_COLS} FROM boards WHERE user_id = $1 ORDER BY created_at ASC",
+                    uuid.UUID(user_id),
+                )
+                board_ids = [r["id"] for r in board_rows]
+                column_rows = []
+                if board_ids:
+                    column_rows = await conn.fetch(
+                        f"SELECT {COLUMN_COLS} FROM columns WHERE board_id = ANY($1) ORDER BY position ASC",
+                        board_ids,
+                    )
+            await websocket.send_text(json.dumps({
+                "type": "BOARDS_DATA",
+                "payload": {
+                    "boards": [row_to_board(r) for r in board_rows],
+                    "columns": [row_to_column(r) for r in column_rows],
+                },
+            }))
+
         elif msg_type == "CREATE_TODO":
             title = payload.get("title", "").strip()
             if not title:
@@ -262,15 +346,22 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             if priority not in ("low", "normal", "high"):
                 priority = "normal"
             tags = [t for t in payload.get("tags", []) if t]
+            board_id = payload.get("boardId")
+            column_id = payload.get("columnId")
+            position = int(payload.get("position", 0))
+
+            board_uuid = uuid.UUID(board_id) if board_id else None
+            column_uuid = uuid.UUID(column_id) if column_id else None
 
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
                     f"""INSERT INTO todos
-                           (user_id, title, description, important, due_date, priority, tags)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                           (user_id, title, description, important, due_date, priority, tags, board_id, column_id, position)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                         RETURNING {TODO_COLS}""",
                     uuid.UUID(user_id), title, description,
                     important, due_date, priority, tags,
+                    board_uuid, column_uuid, position,
                 )
             await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": row_to_todo(row)})
 
@@ -347,6 +438,205 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                         WHERE id = $1 AND user_id = $2
                         RETURNING {TODO_COLS}""",
                     uuid.UUID(todo_id), uuid.UUID(user_id),
+                )
+            if row:
+                await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})
+
+        elif msg_type == "CREATE_BOARD":
+            name = payload.get("name", "").strip()
+            if not name:
+                await websocket.send_text(json.dumps({
+                    "type": "ERROR", "payload": {"message": "Board name is required"},
+                }))
+                return
+            description = payload.get("description", "").strip()
+
+            async with pool.acquire() as conn:
+                board_row = await conn.fetchrow(
+                    f"""INSERT INTO boards (user_id, name, description)
+                        VALUES ($1, $2, $3)
+                        RETURNING {BOARD_COLS}""",
+                    uuid.UUID(user_id), name, description,
+                )
+                board_id = board_row["id"]
+                # Create 3 default columns
+                col_rows = []
+                for i, col_name in enumerate(["To Do", "In Progress", "Done"]):
+                    col_row = await conn.fetchrow(
+                        f"""INSERT INTO columns (board_id, name, position)
+                            VALUES ($1, $2, $3)
+                            RETURNING {COLUMN_COLS}""",
+                        board_id, col_name, i,
+                    )
+                    col_rows.append(col_row)
+
+            await broadcast_to_user(user_id, {
+                "type": "BOARD_CREATED",
+                "payload": {
+                    "board": row_to_board(board_row),
+                    "columns": [row_to_column(r) for r in col_rows],
+                },
+            })
+
+        elif msg_type == "UPDATE_BOARD":
+            board_id = payload.get("id")
+            if not board_id:
+                return
+            updates: dict = {}
+            if "name" in payload:
+                name = payload["name"].strip()
+                if not name:
+                    await websocket.send_text(json.dumps({
+                        "type": "ERROR", "payload": {"message": "Board name cannot be empty"},
+                    }))
+                    return
+                updates["name"] = name
+            if "description" in payload:
+                updates["description"] = payload["description"].strip()
+            if not updates:
+                return
+
+            values: list = [uuid.UUID(board_id)]
+            set_parts = []
+            for i, (col, val) in enumerate(updates.items(), start=2):
+                set_parts.append(f"{col} = ${i}")
+                values.append(val)
+            values.append(uuid.UUID(user_id))
+
+            sql = (
+                f"UPDATE boards SET {', '.join(set_parts)} "
+                f"WHERE id = $1 AND user_id = ${len(values)} "
+                f"RETURNING {BOARD_COLS}"
+            )
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(sql, *values)
+
+            if row:
+                await broadcast_to_user(user_id, {"type": "BOARD_UPDATED", "payload": row_to_board(row)})
+
+        elif msg_type == "DELETE_BOARD":
+            board_id = payload.get("id")
+            if not board_id:
+                return
+            async with pool.acquire() as conn:
+                result = await conn.execute(
+                    "DELETE FROM boards WHERE id = $1 AND user_id = $2",
+                    uuid.UUID(board_id), uuid.UUID(user_id),
+                )
+            if result == "DELETE 1":
+                await broadcast_to_user(user_id, {"type": "BOARD_DELETED", "payload": {"id": board_id}})
+
+        elif msg_type == "CREATE_COLUMN":
+            board_id = payload.get("boardId")
+            name = payload.get("name", "").strip()
+            if not board_id or not name:
+                await websocket.send_text(json.dumps({
+                    "type": "ERROR", "payload": {"message": "boardId and name are required"},
+                }))
+                return
+            position = int(payload.get("position", 0))
+
+            # Verify the board belongs to this user
+            async with pool.acquire() as conn:
+                board = await conn.fetchrow(
+                    "SELECT id FROM boards WHERE id = $1 AND user_id = $2",
+                    uuid.UUID(board_id), uuid.UUID(user_id),
+                )
+                if not board:
+                    await websocket.send_text(json.dumps({
+                        "type": "ERROR", "payload": {"message": "Board not found"},
+                    }))
+                    return
+                row = await conn.fetchrow(
+                    f"""INSERT INTO columns (board_id, name, position)
+                        VALUES ($1, $2, $3)
+                        RETURNING {COLUMN_COLS}""",
+                    uuid.UUID(board_id), name, position,
+                )
+            await broadcast_to_user(user_id, {"type": "COLUMN_CREATED", "payload": row_to_column(row)})
+
+        elif msg_type == "UPDATE_COLUMN":
+            column_id = payload.get("id")
+            if not column_id:
+                return
+            updates: dict = {}
+            if "name" in payload:
+                name = payload["name"].strip()
+                if not name:
+                    await websocket.send_text(json.dumps({
+                        "type": "ERROR", "payload": {"message": "Column name cannot be empty"},
+                    }))
+                    return
+                updates["name"] = name
+            if "position" in payload:
+                updates["position"] = int(payload["position"])
+            if not updates:
+                return
+
+            # Verify ownership via board
+            async with pool.acquire() as conn:
+                col = await conn.fetchrow(
+                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    uuid.UUID(column_id), uuid.UUID(user_id),
+                )
+                if not col:
+                    return
+
+                values: list = [uuid.UUID(column_id)]
+                set_parts = []
+                for i, (db_col, val) in enumerate(updates.items(), start=2):
+                    set_parts.append(f"{db_col} = ${i}")
+                    values.append(val)
+
+                sql = (
+                    f"UPDATE columns SET {', '.join(set_parts)} "
+                    f"WHERE id = $1 "
+                    f"RETURNING {COLUMN_COLS}"
+                )
+                row = await conn.fetchrow(sql, *values)
+
+            if row:
+                await broadcast_to_user(user_id, {"type": "COLUMN_UPDATED", "payload": row_to_column(row)})
+
+        elif msg_type == "DELETE_COLUMN":
+            column_id = payload.get("id")
+            if not column_id:
+                return
+            # Verify ownership via board, then delete (todos get column_id=NULL via FK ON DELETE SET NULL)
+            async with pool.acquire() as conn:
+                col = await conn.fetchrow(
+                    "SELECT c.id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    uuid.UUID(column_id), uuid.UUID(user_id),
+                )
+                if not col:
+                    return
+                result = await conn.execute(
+                    "DELETE FROM columns WHERE id = $1",
+                    uuid.UUID(column_id),
+                )
+            if result == "DELETE 1":
+                await broadcast_to_user(user_id, {"type": "COLUMN_DELETED", "payload": {"id": column_id}})
+
+        elif msg_type == "MOVE_CARD":
+            todo_id = payload.get("id")
+            column_id = payload.get("columnId")
+            position = int(payload.get("position", 0))
+            if not todo_id or not column_id:
+                return
+
+            async with pool.acquire() as conn:
+                # Verify the column belongs to a board owned by this user
+                col = await conn.fetchrow(
+                    "SELECT c.id, c.board_id FROM columns c JOIN boards b ON b.id = c.board_id WHERE c.id = $1 AND b.user_id = $2",
+                    uuid.UUID(column_id), uuid.UUID(user_id),
+                )
+                if not col:
+                    return
+                row = await conn.fetchrow(
+                    f"""UPDATE todos SET column_id = $2, board_id = $3, position = $4
+                        WHERE id = $1 AND user_id = $5
+                        RETURNING {TODO_COLS}""",
+                    uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"], position, uuid.UUID(user_id),
                 )
             if row:
                 await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})

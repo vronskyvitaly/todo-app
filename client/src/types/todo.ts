@@ -8,6 +8,25 @@ export interface Todo {
   dueDate: string | null;
   priority: "low" | "normal" | "high";
   tags: string[];
+  boardId: string | null;
+  columnId: string | null;
+  position: number;
+}
+
+export interface Board {
+  id: string;
+  userId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface Column {
+  id: string;
+  boardId: string;
+  name: string;
+  position: number;
+  createdAt: string;
 }
 
 export type WsMessageType =
@@ -20,6 +39,21 @@ export type WsMessageType =
   | "TODO_CREATED"
   | "TODO_UPDATED"
   | "TODO_DELETED"
+  | "GET_BOARDS"
+  | "CREATE_BOARD"
+  | "UPDATE_BOARD"
+  | "DELETE_BOARD"
+  | "CREATE_COLUMN"
+  | "UPDATE_COLUMN"
+  | "DELETE_COLUMN"
+  | "MOVE_CARD"
+  | "BOARDS_DATA"
+  | "BOARD_CREATED"
+  | "BOARD_UPDATED"
+  | "BOARD_DELETED"
+  | "COLUMN_CREATED"
+  | "COLUMN_UPDATED"
+  | "COLUMN_DELETED"
   | "ERROR";
 
 export interface WsMessage {

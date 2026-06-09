@@ -3,18 +3,32 @@
 import { useAppSelector } from "@/store";
 import TodoItem from "./TodoItem";
 import TodoFilters from "./TodoFilters";
+import { TaskListSkeleton } from "@/components/skeletons";
 
 export default function TodoList() {
   const todos = useAppSelector((s) => s.todos.todos);
   const filter = useAppSelector((s) => s.todos.filter);
   const connected = useAppSelector((s) => s.todos.connected);
+  const isLoading = useAppSelector((s) => s.todos.isLoading);
 
-  const filtered = todos.filter((t) => {
+  // My Tasks only shows todos not assigned to a board
+  const myTasks = todos.filter((t) => t.boardId === null);
+
+  const filtered = myTasks.filter((t) => {
     if (filter === "active") return !t.completed;
     if (filter === "completed") return t.completed;
     if (filter === "important") return t.important;
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <TodoFilters />
+        <TaskListSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

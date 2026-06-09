@@ -1,6 +1,16 @@
 import { Middleware } from "@reduxjs/toolkit";
 import { addTodo, removeTodo, setConnected, setError, setTodos, updateTodo } from "./todosSlice";
-import type { Todo, WsMessage } from "@/types/todo";
+import {
+  setBoards,
+  setColumns,
+  addBoard,
+  updateBoard,
+  removeBoard,
+  addColumn,
+  updateColumn,
+  removeColumn,
+} from "./boardsSlice";
+import type { Board, Column, Todo, WsMessage } from "@/types/todo";
 
 export const WS_CONNECT = "ws/connect";
 export const WS_DISCONNECT = "ws/disconnect";
@@ -50,6 +60,33 @@ export const wsMiddleware: Middleware = (store) => (next) => (action: unknown) =
             break;
           case "TODO_DELETED":
             store.dispatch(removeTodo((msg.payload as { id: string }).id));
+            break;
+          case "BOARDS_DATA": {
+            const p = msg.payload as { boards: Board[]; columns: Column[] };
+            store.dispatch(setBoards(p.boards));
+            store.dispatch(setColumns(p.columns));
+            break;
+          }
+          case "BOARD_CREATED": {
+            const p = msg.payload as { board: Board; columns: Column[] };
+            store.dispatch(addBoard(p.board));
+            p.columns.forEach((c) => store.dispatch(addColumn(c)));
+            break;
+          }
+          case "BOARD_UPDATED":
+            store.dispatch(updateBoard(msg.payload as Board));
+            break;
+          case "BOARD_DELETED":
+            store.dispatch(removeBoard((msg.payload as { id: string }).id));
+            break;
+          case "COLUMN_CREATED":
+            store.dispatch(addColumn(msg.payload as Column));
+            break;
+          case "COLUMN_UPDATED":
+            store.dispatch(updateColumn(msg.payload as Column));
+            break;
+          case "COLUMN_DELETED":
+            store.dispatch(removeColumn((msg.payload as { id: string }).id));
             break;
           case "ERROR":
             store.dispatch(setError((msg.payload as { message: string }).message));

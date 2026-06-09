@@ -7,6 +7,7 @@ interface TodosState {
   connected: boolean;
   error: string | null;
   editingId: string | null;
+  isLoading: boolean;
 }
 
 const initialState: TodosState = {
@@ -15,6 +16,7 @@ const initialState: TodosState = {
   connected: false,
   error: null,
   editingId: null,
+  isLoading: true,
 };
 
 const todosSlice = createSlice({
@@ -23,6 +25,7 @@ const todosSlice = createSlice({
   reducers: {
     setTodos(state, action: PayloadAction<Todo[]>) {
       state.todos = action.payload;
+      state.isLoading = false;
     },
     addTodo(state, action: PayloadAction<Todo>) {
       state.todos.push(action.payload);

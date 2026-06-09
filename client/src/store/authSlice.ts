@@ -1,15 +1,24 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { AuthState, AuthUser } from "@/types/todo";
 
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
+// Sync init from localStorage — runs before first render on client
+const getInitialState = (): AuthState => {
+  if (typeof window === "undefined") {
+    return { user: null, token: null, isAuthenticated: false };
+  }
+  try {
+    const token = localStorage.getItem("token");
+    const userRaw = localStorage.getItem("user");
+    if (token && userRaw) {
+      return { user: JSON.parse(userRaw) as AuthUser, token, isAuthenticated: true };
+    }
+  } catch {}
+  return { user: null, token: null, isAuthenticated: false };
 };
 
 const authSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState: getInitialState(),
   reducers: {
     setCredentials(state, action: PayloadAction<{ user: AuthUser; token: string }>) {
       state.user = action.payload.user;
