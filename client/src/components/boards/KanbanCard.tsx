@@ -95,7 +95,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
       {(todo.description || todo.dueDate || todo.tags.length > 0 || todo.important || todo.priority !== "normal") && (
         <div className="mt-1 ml-5 flex items-center gap-1 flex-wrap">
           {todo.description && (
-            <span className="text-[10px] text-slate-500 line-clamp-1 w-full">{todo.description}</span>
+            <span className="text-[10px] text-slate-500 w-full">{todo.description}</span>
           )}
           {todo.important && (
             <svg className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">

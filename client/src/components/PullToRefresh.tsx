@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { WS_CONNECT } from "@/store/wsMiddleware";
 
 const THRESHOLD = 72; // px needed to trigger refresh
 
 export default function PullToRefresh({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
+  const connected = useAppSelector((s) => s.todos.connected);
   const [pullY, setPullY] = useState(0);       // visual pull distance
   const [refreshing, setRefreshing] = useState(false);
 
-  const startYRef   = useRef(0);
-  const currentYRef = useRef(0);
-  const activeRef   = useRef(false);           // are we in a pull gesture?
+  const startYRef     = useRef(0);
+  const currentYRef   = useRef(0);
+  const activeRef     = useRef(false);         // are we in a pull gesture?
+  const connectedRef  = useRef(connected);
+  connectedRef.current = connected;
 
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
+      // Only allow pull-to-refresh when WebSocket is disconnected
+      if (connectedRef.current) return;
       // Only start pull when page is scrolled to the very top
       if (window.scrollY > 2) return;
       startYRef.current   = e.touches[0].clientY;
