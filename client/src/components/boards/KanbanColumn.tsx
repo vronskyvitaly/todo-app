@@ -4,37 +4,26 @@ import { useState, useRef } from "react";
 import { Column, Todo } from "@/types/todo";
 import { useAppDispatch } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
+import { useDroppable } from "@dnd-kit/core";
 import KanbanCard from "./KanbanCard";
 
 interface Props {
   column: Column;
   todos: Todo[];
-  draggingId: string | null;
-  onDragStart: (id: string) => void;
-  onDrop: (columnId: string, position: number) => void;
-  onTouchDragEnd: () => void;
 }
 
-export default function KanbanColumn({ column, todos, draggingId, onDragStart, onDrop, onTouchDragEnd }: Props) {
+export default function KanbanColumn({ column, todos }: Props) {
   const dispatch = useAppDispatch();
-  const [isOver, setIsOver] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setIsOver(true);
-  };
-  const handleDragLeave = () => setIsOver(false);
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsOver(false);
-    onDrop(column.id, todos.length);
-  };
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.id,
+    data: { count: todos.length },
+  });
 
   const openAddCard = () => {
     setAddingCard(true);
@@ -82,11 +71,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
 
   return (
     <div
-      data-column-id={column.id}
-      data-column-count={sorted.length}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      ref={setNodeRef}
       className={`flex-shrink-0 w-[92vw] sm:w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
         ${isOver ? "border-indigo-500/60 bg-slate-700/40" : "border-slate-700/30"}`}
     >
@@ -135,18 +120,11 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
       <div
         className="flex-1 px-[15%] sm:px-2 pb-2 space-y-1.5 min-h-[4rem] cursor-pointer overflow-y-auto"
         onClick={(e) => {
-          // Only trigger if clicking the area itself, not a card
           if (e.target === e.currentTarget) openAddCard();
         }}
       >
         {sorted.map((todo) => (
-          <KanbanCard
-            key={todo.id}
-            todo={todo}
-            onDragStart={onDragStart}
-            onTouchDragEnd={onTouchDragEnd}
-            dragging={draggingId === todo.id}
-          />
+          <KanbanCard key={todo.id} todo={todo} />
         ))}
       </div>
 

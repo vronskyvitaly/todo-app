@@ -5,6 +5,18 @@ import { Board, Column, Todo } from "@/types/todo";
 import { useAppDispatch } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
 import KanbanColumn from "./KanbanColumn";
+import KanbanCard from "./KanbanCard";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 interface Props {
   board: Board;
@@ -14,25 +26,31 @@ interface Props {
 
 export default function KanbanBoard({ board, columns, todos }: Props) {
   const dispatch = useAppDispatch();
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
 
-  const handleDragStart = (id: string) => setDraggingId(id);
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
 
-  const handleDrop = (columnId: string, position: number) => {
-    if (!draggingId) return;
-    dispatch({
-      type: WS_SEND,
-      payload: {
-        type: "MOVE_CARD",
-        payload: { id: draggingId, columnId, position },
-      },
-    });
-    setDraggingId(null);
+  const activeTodo = todos.find((t) => t.id === activeId) ?? null;
+
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveId(active.id as string);
   };
 
-  const handleDragEnd = () => setDraggingId(null);
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveId(null);
+    if (!over) return;
+    const columnId = over.id as string;
+    const position = (over.data.current?.count ?? 0) as number;
+    dispatch({
+      type: WS_SEND,
+      payload: { type: "MOVE_CARD", payload: { id: active.id as string, columnId, position } },
+    });
+  };
 
   const handleAddColumn = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,20 +70,18 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
   const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
 
   return (
-    <>
-      <div
-        onDragEnd={handleDragEnd}
-        className="flex gap-4 h-full items-start"
-      >
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex gap-4 h-full items-start">
         {sortedColumns.map((col) => (
           <KanbanColumn
             key={col.id}
             column={col}
             todos={todos.filter((t) => t.columnId === col.id)}
-            draggingId={draggingId}
-            onDragStart={handleDragStart}
-            onDrop={handleDrop}
-            onTouchDragEnd={handleDragEnd}
           />
         ))}
 
@@ -84,6 +100,11 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Ghost card that follows the pointer */}
+      <DragOverlay dropAnimation={null}>
+        {activeTodo ? <KanbanCard todo={activeTodo} isOverlay /> : null}
+      </DragOverlay>
 
       {/* Add column modal — fixed, never clipped by scroll */}
       {addingColumn && (
@@ -113,7 +134,7 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
                 onChange={(e) => setNewColumnName(e.target.value)}
                 autoFocus
                 placeholder="Column name…"
-                className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-4 py-2.5 text-slate-100
+                className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-4 py-2.5 text-base text-slate-100
                   placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
               />
               <div className="flex gap-3">
@@ -137,6 +158,6 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
           </div>
         </div>
       )}
-    </>
+    </DndContext>
   );
 }
