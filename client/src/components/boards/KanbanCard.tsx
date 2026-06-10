@@ -42,7 +42,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`group bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2 select-none
+      className={`group bg-slate-800/60 border border-slate-700/50 rounded-xl px-2 py-1.5 select-none
         ${isOverlay
           ? "cursor-grabbing rotate-1 shadow-2xl scale-105 opacity-90"
           : "cursor-grab active:cursor-grabbing transition-all duration-150 hover:border-slate-600/60"
@@ -67,7 +67,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
           )}
         </button>
 
-        <p className={`flex-1 min-w-0 text-xs font-medium leading-snug break-words
+        <p className={`flex-1 min-w-0 text-[11px] font-medium leading-snug break-words
           ${todo.completed ? "line-through text-slate-500" : "text-slate-100"}`}>
           {todo.title}
         </p>
@@ -95,7 +95,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
       {(todo.description || todo.dueDate || todo.tags.length > 0 || todo.important || todo.priority !== "normal") && (
         <div className="mt-1 ml-5 flex items-center gap-1 flex-wrap">
           {todo.description && (
-            <span className="text-xs text-slate-500 line-clamp-1 w-full">{todo.description}</span>
+            <span className="text-[10px] text-slate-500 line-clamp-1 w-full">{todo.description}</span>
           )}
           {todo.important && (
             <svg className="w-2.5 h-2.5 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -103,14 +103,14 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
             </svg>
           )}
           {todo.priority !== "normal" && (
-            <span className={`text-xs font-medium px-1 rounded ${
+            <span className={`text-[10px] font-medium px-1 rounded ${
               todo.priority === "high" ? "text-red-400" : "text-slate-500"
             }`}>
               {todo.priority === "high" ? "↑" : "↓"}
             </span>
           )}
           {todo.dueDate && (
-            <span className={`text-xs ${
+            <span className={`text-[10px] ${
               !todo.completed && todo.dueDate < new Date().toISOString().slice(0, 10)
                 ? "text-red-400" : "text-slate-500"
             }`}>
@@ -118,7 +118,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
             </span>
           )}
           {todo.tags.map((tag) => (
-            <span key={tag} className="text-xs bg-indigo-500/15 text-indigo-400 px-1 rounded">{tag}</span>
+            <span key={tag} className="text-[10px] bg-indigo-500/15 text-indigo-400 px-1 rounded">{tag}</span>
           ))}
         </div>
       )}
