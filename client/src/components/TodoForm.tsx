@@ -70,14 +70,14 @@ export default function TodoForm({ onClose }: Props) {
             <label htmlFor="title" className="block text-sm font-medium text-slate-300">
               Title <span className="text-red-400">*</span>
             </label>
-            <input
+            <textarea
               id="title"
-              type="text"
+              rows={2}
               autoFocus
               placeholder="What needs to be done?"
               disabled={!connected}
               {...register("title")}
-              className={inputCls(!!errors.title)}
+              className={inputCls(!!errors.title) + " resize-none"}
             />
             {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
           </div>

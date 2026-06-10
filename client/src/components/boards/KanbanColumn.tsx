@@ -22,7 +22,7 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
   const [newCardTitle, setNewCardTitle] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -56,8 +56,12 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
     setAddingCard(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") { setNewCardTitle(""); setAddingCard(false); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleAddCard(e as unknown as React.FormEvent);
+    }
   };
 
   const handleRenameColumn = (e: React.FormEvent) => {
@@ -150,16 +154,16 @@ export default function KanbanColumn({ column, todos, draggingId, onDragStart, o
       <div className="px-[15%] sm:px-2 pb-2">
         {addingCard ? (
           <form onSubmit={handleAddCard} className="space-y-2">
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={2}
               value={newCardTitle}
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={() => { if (!newCardTitle.trim()) setAddingCard(false); }}
               placeholder="Card title…"
               className="w-full rounded-xl bg-slate-900/80 border border-indigo-500/50 px-3 py-2 text-sm text-slate-100
-                placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none"
             />
             <div className="flex gap-2">
               <button
