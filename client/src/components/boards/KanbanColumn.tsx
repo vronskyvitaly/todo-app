@@ -134,7 +134,7 @@ export default function KanbanColumn({ column, todos }: Props) {
           <form onSubmit={handleAddCard} className="space-y-2">
             <textarea
               ref={inputRef}
-              rows={4}
+              rows={6}
               value={newCardTitle}
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={handleKeyDown}
