@@ -129,7 +129,7 @@ export default function KanbanColumn({ column, todos }: Props) {
       </div>
 
       {/* Inline add card form / button */}
-      <div className="px-[8%] sm:px-3 pb-2">
+      <div className="px-[8%] sm:px-3 pt-2 pb-2">
         {addingCard ? (
           <form onSubmit={handleAddCard} className="space-y-2">
             <textarea
