@@ -72,12 +72,11 @@ export default function TodoForm({ onClose }: Props) {
             </label>
             <textarea
               id="title"
-              rows={3}
+              rows={2}
               autoFocus
               placeholder="What needs to be done?"
               disabled={!connected}
               {...register("title")}
-              style={{ zoom: 0.875 }}
               className={inputCls(!!errors.title) + " resize-none"}
             />
             {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
@@ -94,7 +93,6 @@ export default function TodoForm({ onClose }: Props) {
               placeholder="Optional details..."
               disabled={!connected}
               {...register("description")}
-              style={{ zoom: 0.875 }}
               className={inputCls(!!errors.description) + " resize-none"}
             />
           </div>
