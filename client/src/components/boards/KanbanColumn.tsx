@@ -134,13 +134,13 @@ export default function KanbanColumn({ column, todos }: Props) {
           <form onSubmit={handleAddCard} className="space-y-2">
             <textarea
               ref={inputRef}
-              rows={3}
+              rows={4}
               value={newCardTitle}
               onChange={(e) => setNewCardTitle(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={() => { if (!newCardTitle.trim()) setAddingCard(false); }}
               placeholder="Card title…"
-              className="w-full rounded-xl bg-slate-900/80 border border-indigo-500/50 px-3 py-2 text-base text-slate-100
+              className="w-full rounded-xl bg-slate-900/80 border border-indigo-500/50 px-3 py-2 text-sm text-slate-100
                 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none"
             />
             <div className="flex gap-2">
