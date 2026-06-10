@@ -85,9 +85,10 @@ export default function EditModal() {
               Title <span className="text-red-400">*</span>
             </label>
             <textarea
-              rows={2}
+              rows={3}
               {...register("title")}
-              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100
+              style={{ zoom: 0.875 }}
+              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
                 ${errors.title ? "border-red-500/70" : "border-slate-700/60"}`}
             />
@@ -103,7 +104,8 @@ export default function EditModal() {
             <textarea
               rows={3}
               {...register("description")}
-              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100
+              style={{ zoom: 0.875 }}
+              className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
                 ${errors.description ? "border-red-500/70" : "border-slate-700/60"}`}
             />

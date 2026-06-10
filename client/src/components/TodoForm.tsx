@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
 
 const inputCls = (err?: boolean) =>
-  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100 placeholder-slate-500
+  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100 placeholder-slate-500
    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
    disabled:opacity-40 disabled:cursor-not-allowed
    ${err ? "border-red-500/70" : "border-slate-700/60"}`;
@@ -72,11 +72,12 @@ export default function TodoForm({ onClose }: Props) {
             </label>
             <textarea
               id="title"
-              rows={2}
+              rows={3}
               autoFocus
               placeholder="What needs to be done?"
               disabled={!connected}
               {...register("title")}
+              style={{ zoom: 0.875 }}
               className={inputCls(!!errors.title) + " resize-none"}
             />
             {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
@@ -93,6 +94,7 @@ export default function TodoForm({ onClose }: Props) {
               placeholder="Optional details..."
               disabled={!connected}
               {...register("description")}
+              style={{ zoom: 0.875 }}
               className={inputCls(!!errors.description) + " resize-none"}
             />
           </div>
