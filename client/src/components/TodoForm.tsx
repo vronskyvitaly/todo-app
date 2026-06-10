@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
 
 const inputCls = (err?: boolean) =>
-  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100 placeholder-slate-500
+  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100 placeholder-slate-500
    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
    disabled:opacity-40 disabled:cursor-not-allowed
    ${err ? "border-red-500/70" : "border-slate-700/60"}`;
