@@ -41,7 +41,8 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 # ---------------------------------------------------------------------------
 TODO_COLS = (
     "id, title, description, completed, created_at, important, due_date, "
-    "priority, tags, board_id, column_id, position, reminder_at, reminder_sent"
+    "priority, tags, board_id, column_id, position, reminder_at, reminder_sent, "
+    "recurring_days, recurring_time, recurring_count"
 )
 BOARD_COLS  = "id, user_id, name, description, created_at"
 COLUMN_COLS = "id, board_id, name, position, created_at"
@@ -102,8 +103,11 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS board_id       UUID      REFERENCES boards(id) ON DELETE SET NULL;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS column_id      UUID      REFERENCES columns(id) ON DELETE SET NULL;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS position       INTEGER   NOT NULL DEFAULT 0;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_at    TIMESTAMPTZ;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_sent  BOOLEAN   NOT NULL DEFAULT FALSE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_at      TIMESTAMPTZ;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_sent   BOOLEAN   NOT NULL DEFAULT FALSE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_days  INTEGER[] NOT NULL DEFAULT '{}';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_time  TEXT      NOT NULL DEFAULT '09:00';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_count INTEGER   NOT NULL DEFAULT 0;
         """)
 
     scheduler.add_job(check_reminders, "interval", seconds=30, id="reminders")
@@ -150,8 +154,11 @@ def row_to_todo(r: asyncpg.Record) -> dict:
         "boardId":      str(r["board_id"])   if r["board_id"]   else None,
         "columnId":     str(r["column_id"])  if r["column_id"]  else None,
         "position":     r["position"],
-        "reminderAt":   r["reminder_at"].isoformat()  if r["reminder_at"]  else None,
-        "reminderSent": r["reminder_sent"],
+        "reminderAt":      r["reminder_at"].isoformat() if r["reminder_at"] else None,
+        "reminderSent":    r["reminder_sent"],
+        "recurringDays":   list(r["recurring_days"]),
+        "recurringTime":   r["recurring_time"],
+        "recurringCount":  r["recurring_count"],
     }
 
 
@@ -582,7 +589,13 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 updates["tags"] = [t for t in payload["tags"] if t]
             if "reminderAt" in payload:
                 updates["reminder_at"]   = parse_reminder(payload["reminderAt"])
-                updates["reminder_sent"] = False  # reset sent flag on new reminder
+                updates["reminder_sent"] = False
+            if "recurringDays" in payload:
+                updates["recurring_days"] = [int(d) for d in payload["recurringDays"] if 0 <= int(d) <= 6]
+            if "recurringTime" in payload:
+                updates["recurring_time"] = str(payload["recurringTime"])[:5]
+            if "recurringCount" in payload:
+                updates["recurring_count"] = max(0, int(payload["recurringCount"]))
             if not updates:
                 return
 

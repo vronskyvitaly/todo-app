@@ -106,6 +106,14 @@ export default function TodoItem({ todo }: Props) {
               Due {new Date(todo.dueDate + "T00:00:00").toLocaleDateString("ru-RU")}
             </span>
           )}
+          {todo.recurringDays.length > 0 && (
+            <button onClick={edit} className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {todo.recurringTime}
+            </button>
+          )}
           {todo.tags.map((tag) => (
             <span key={tag} className="text-xs bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-md">
               {tag}

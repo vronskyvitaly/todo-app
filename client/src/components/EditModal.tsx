@@ -42,7 +42,12 @@ export default function EditModal() {
         tags: todo.tags.join(", "),
         reminderMinutes: "",
       });
-      setRecurring(defaultRecurring);
+      setRecurring({
+        enabled: todo.recurringDays.length > 0,
+        days: todo.recurringDays,
+        time: todo.recurringTime || "09:00",
+        repeatCount: todo.recurringCount,
+      });
     }
   }, [todo, reset]);
 
@@ -53,7 +58,13 @@ export default function EditModal() {
       type: WS_SEND,
       payload: {
         type: "UPDATE_TODO",
-        payload: { id: editingId, ...formToPayload(data) },
+        payload: {
+          id: editingId,
+          ...formToPayload(data),
+          recurringDays:  recurring.enabled ? recurring.days : [],
+          recurringTime:  recurring.time,
+          recurringCount: recurring.enabled ? recurring.repeatCount : 0,
+        },
       },
     });
     close();

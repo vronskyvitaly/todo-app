@@ -13,6 +13,9 @@ export interface Todo {
   position: number;
   reminderAt: string | null;
   reminderSent: boolean;
+  recurringDays: number[];
+  recurringTime: string;
+  recurringCount: number;
 }
 
 export interface Board {
