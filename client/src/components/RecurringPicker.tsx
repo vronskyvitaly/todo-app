@@ -62,7 +62,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
           {/* Days of week */}
           <div className="space-y-2">
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Дни недели</span>
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex justify-between">
               {DAYS.map((day, i) => {
                 const active = value.days.includes(i);
                 return (
