@@ -31,6 +31,12 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Block pinch-to-zoom on iOS (user-scalable=no is ignored since iOS 10)
+    const blockPinch = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    document.addEventListener("touchmove", blockPinch, { passive: false });
+
     // Reconnect immediately when app comes back to foreground (iOS PWA)
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -41,6 +47,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      document.removeEventListener("touchmove", blockPinch);
       document.removeEventListener("visibilitychange", handleVisibility);
       dispatch({ type: WS_DISCONNECT });
     };
