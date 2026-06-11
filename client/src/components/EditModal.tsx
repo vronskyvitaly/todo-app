@@ -39,7 +39,7 @@ export default function EditModal() {
         important: todo.important,
         dueDate: todo.dueDate ?? null,
         priority: todo.priority,
-        tags: todo.tags.join(", "),
+        tags: (todo.tags ?? []).join(", "),
         reminderMinutes: "",
       });
       setRecurring({

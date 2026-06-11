@@ -114,7 +114,7 @@ export default function TodoItem({ todo }: Props) {
               {todo.recurringTime} · {[...(todo.recurringDays ?? [])].sort().map(d => ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"][d]).join(", ")}
             </button>
           )}
-          {todo.tags.map((tag) => (
+          {(todo.tags ?? []).map((tag) => (
             <span key={tag} className="text-xs bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-md">
               {tag}
             </span>
