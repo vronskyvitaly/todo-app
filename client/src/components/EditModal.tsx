@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { todoSchema, TodoFormValues, formToPayload } from "@/lib/validations";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setEditingId } from "@/store/todosSlice";
 import { WS_SEND } from "@/store/wsMiddleware";
+import RecurringPicker, { RecurringSettings, defaultRecurring } from "@/components/RecurringPicker";
 
 export default function EditModal() {
   const dispatch = useAppDispatch();
@@ -14,6 +15,7 @@ export default function EditModal() {
   const todo = useAppSelector((s) =>
     s.todos.todos.find((t) => t.id === editingId)
   );
+  const [recurring, setRecurring] = useState<RecurringSettings>(defaultRecurring);
 
   const {
     register,
@@ -40,6 +42,7 @@ export default function EditModal() {
         tags: todo.tags.join(", "),
         reminderMinutes: "",
       });
+      setRecurring(defaultRecurring);
     }
   }, [todo, reset]);
 
@@ -192,34 +195,8 @@ export default function EditModal() {
             </div>
           </div>
 
-          {/* Reminder */}
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-400">
-              Remind me
-              {todo?.reminderAt && !todo.reminderSent && (
-                <span className="ml-2 text-indigo-400">
-                  · set for {new Date(todo.reminderAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              )}
-              {todo?.reminderSent && (
-                <span className="ml-2 text-slate-500">· sent</span>
-              )}
-            </label>
-            <select
-              {...register("reminderMinutes")}
-              className="w-full rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2.5 text-sm text-slate-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-            >
-              <option value="">No reminder</option>
-              <option value="1">In 1 minute</option>
-              <option value="5">In 5 minutes</option>
-              <option value="15">In 15 minutes</option>
-              <option value="30">In 30 minutes</option>
-              <option value="60">In 1 hour</option>
-              <option value="120">In 2 hours</option>
-              <option value="1440">Tomorrow</option>
-            </select>
-          </div>
+          {/* Recurring reminder */}
+          <RecurringPicker value={recurring} onChange={setRecurring} />
 
           <div className="flex gap-3 pt-1">
             <button
