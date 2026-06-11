@@ -78,9 +78,15 @@ export default function NavBar() {
           )}
           <button
             onClick={handleLogout}
-            className="text-xs sm:text-sm text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded-lg px-2.5 sm:px-3 py-1.5 transition-colors whitespace-nowrap"
+            title="Logout"
+            className="text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded-lg p-1.5 sm:px-3 sm:py-1.5 transition-colors flex items-center gap-1.5"
           >
-            Logout
+            {/* Icon always visible */}
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {/* Text only on sm+ */}
+            <span className="hidden sm:inline text-sm">Logout</span>
           </button>
         </div>
       </div>
