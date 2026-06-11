@@ -105,9 +105,11 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS position       INTEGER   NOT NULL DEFAULT 0;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_at      TIMESTAMPTZ;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_sent   BOOLEAN   NOT NULL DEFAULT FALSE;
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_days  INTEGER[] NOT NULL DEFAULT '{}';
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_time  TEXT      NOT NULL DEFAULT '09:00';
-            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_count INTEGER   NOT NULL DEFAULT 0;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_days       INTEGER[] NOT NULL DEFAULT '{}';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_time       TEXT      NOT NULL DEFAULT '09:00';
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_count      INTEGER   NOT NULL DEFAULT 0;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_sent_count INTEGER   NOT NULL DEFAULT 0;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_last_sent  DATE;
         """)
 
     scheduler.add_job(check_reminders, "interval", seconds=30, id="reminders")
@@ -267,6 +269,60 @@ async def check_reminders() -> None:
             # Mark sent regardless (avoid re-sending on failure)
             await conn.execute(
                 "UPDATE todos SET reminder_sent = TRUE WHERE id = $1",
+                row["id"],
+            )
+
+        # --- Recurring reminders ---
+        now_local = datetime.datetime.now()
+        current_dow  = now_local.weekday()          # 0=Mon … 6=Sun
+        current_hhmm = now_local.strftime("%H:%M")
+
+        recurring_rows = await conn.fetch("""
+            SELECT t.id, t.title, t.recurring_count, t.recurring_sent_count,
+                   ps.endpoint, ps.p256dh, ps.auth
+            FROM todos t
+            JOIN push_subscriptions ps ON ps.user_id = t.user_id
+            WHERE $1 = ANY(t.recurring_days)
+              AND t.recurring_time = $2
+              AND (t.recurring_last_sent IS NULL OR t.recurring_last_sent < CURRENT_DATE)
+              AND (t.recurring_count = 0 OR t.recurring_sent_count < t.recurring_count)
+              AND cardinality(t.recurring_days) > 0
+              AND t.completed = FALSE
+        """, current_dow, current_hhmm)
+
+        print(f"[recurring] dow={current_dow} time={current_hhmm} due={len(recurring_rows)}")
+
+        for row in recurring_rows:
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": row["endpoint"],
+                        "keys": {"p256dh": row["p256dh"], "auth": row["auth"]},
+                    },
+                    data=json.dumps({
+                        "title": "🔔 Напоминание",
+                        "body":  row["title"],
+                        "url":   "/",
+                    }),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": VAPID_EMAIL},
+                )
+                print(f"[recurring] sent push for todo={row['id']}")
+            except WebPushException as exc:
+                print(f"[recurring] WebPushException todo={row['id']}: {exc}")
+                if exc.response and exc.response.status_code in (404, 410):
+                    await conn.execute(
+                        "DELETE FROM push_subscriptions WHERE endpoint = $1",
+                        row["endpoint"],
+                    )
+            except Exception as exc:
+                print(f"[recurring] Exception todo={row['id']}: {exc}")
+
+            await conn.execute(
+                """UPDATE todos
+                   SET recurring_sent_count = recurring_sent_count + 1,
+                       recurring_last_sent  = CURRENT_DATE
+                   WHERE id = $1""",
                 row["id"],
             )
 
