@@ -44,7 +44,7 @@ export default function EditModal() {
       });
       setRecurring({
         enabled: (todo.recurringDays?.length ?? 0) > 0,
-        days: todo.recurringDays ?? [],
+        days: [...(todo.recurringDays ?? [])],
         time: todo.recurringTime ?? "09:00",
         repeatCount: todo.recurringCount ?? 0,
       });

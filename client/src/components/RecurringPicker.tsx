@@ -137,7 +137,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
               <p className="text-xs text-indigo-300">
                 Каждую неделю в {value.time} по:{" "}
                 <span className="font-semibold">
-                  {value.days.sort().map((d) => DAYS[d]).join(", ")}
+                  {[...value.days].sort().map((d) => DAYS[d]).join(", ")}
                 </span>
                 {value.repeatCount > 0 && ` · ${value.repeatCount} раз`}
                 {value.repeatCount === 0 && " · бесконечно"}
