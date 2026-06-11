@@ -84,14 +84,14 @@ export default function RecurringPicker({ value, onChange }: Props) {
           </div>
 
           {/* Time */}
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Время уведомления</span>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0">Время уведомления</span>
             <input
               type="time"
               value={value.time}
               onChange={(e) => set({ time: e.target.value })}
               style={{ colorScheme: "dark" }}
-              className="w-full rounded-xl bg-slate-800 border border-slate-700/60 px-3 py-2.5
+              className="w-32 flex-shrink-0 rounded-xl bg-slate-800 border border-slate-700/60 px-3 py-2
                 text-base sm:text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
