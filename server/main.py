@@ -273,7 +273,8 @@ async def check_reminders() -> None:
             )
 
         # --- Recurring reminders ---
-        now_local = datetime.datetime.now()
+        tz_offset = timedelta(hours=int(os.getenv("TZ_OFFSET_HOURS", "3")))  # UTC+3 Moscow by default
+        now_local = datetime.datetime.now(timezone.utc).astimezone(timezone(tz_offset))
         current_dow  = now_local.weekday()          # 0=Mon … 6=Sun
         current_hhmm = now_local.strftime("%H:%M")
 
