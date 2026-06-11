@@ -43,10 +43,10 @@ export default function EditModal() {
         reminderMinutes: "",
       });
       setRecurring({
-        enabled: todo.recurringDays.length > 0,
-        days: todo.recurringDays,
-        time: todo.recurringTime || "09:00",
-        repeatCount: todo.recurringCount,
+        enabled: (todo.recurringDays?.length ?? 0) > 0,
+        days: todo.recurringDays ?? [],
+        time: todo.recurringTime ?? "09:00",
+        repeatCount: todo.recurringCount ?? 0,
       });
     }
   }, [todo, reset]);
