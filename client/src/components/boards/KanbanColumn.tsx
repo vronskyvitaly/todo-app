@@ -85,7 +85,7 @@ export default function KanbanColumn({ column, todos }: Props) {
               onChange={(e) => setColumnName(e.target.value)}
               autoFocus
               onBlur={() => { setColumnName(column.name); setEditingName(false); }}
-              className="w-full rounded-lg bg-slate-900/70 border border-slate-600 px-2 py-1 text-sm text-slate-100
+              className="w-full rounded-lg bg-slate-900/70 border border-slate-600 px-2 py-1 text-base sm:text-sm text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </form>
