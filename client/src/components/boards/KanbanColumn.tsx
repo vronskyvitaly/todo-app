@@ -19,6 +19,7 @@ export default function KanbanColumn({ column, todos }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const renameRef = useRef<HTMLInputElement>(null);
 
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -80,11 +81,21 @@ export default function KanbanColumn({ column, todos }: Props) {
         {editingName ? (
           <form onSubmit={handleRenameColumn} className="flex-1" onClick={(e) => e.stopPropagation()}>
             <input
+              ref={renameRef}
               type="text"
               value={columnName}
               onChange={(e) => setColumnName(e.target.value)}
-              autoFocus
-              onBlur={() => { setColumnName(column.name); setEditingName(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setColumnName(column.name); setEditingName(false); }
+              }}
+              onBlur={() => {
+                setTimeout(() => {
+                  if (document.activeElement !== renameRef.current) {
+                    setColumnName(column.name);
+                    setEditingName(false);
+                  }
+                }, 200);
+              }}
               className="w-full rounded-lg bg-slate-900/70 border border-slate-600 px-2 py-1 text-base sm:text-sm text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -92,7 +103,7 @@ export default function KanbanColumn({ column, todos }: Props) {
         ) : (
           <>
             <button
-              onClick={() => { setColumnName(column.name); setEditingName(true); }}
+              onClick={() => { setColumnName(column.name); setEditingName(true); setTimeout(() => renameRef.current?.focus(), 50); }}
               className="font-semibold text-slate-200 text-sm hover:text-indigo-400 transition-colors text-left"
             >
               {column.name}
