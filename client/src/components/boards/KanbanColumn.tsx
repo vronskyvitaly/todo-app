@@ -79,7 +79,7 @@ export default function KanbanColumn({ column, todos }: Props) {
       {/* Header */}
       <div className="group flex items-center justify-between px-4 pt-4 pb-2">
         {editingName ? (
-          <form onSubmit={handleRenameColumn} className="flex-1" onClick={(e) => e.stopPropagation()}>
+          <form onSubmit={handleRenameColumn} className="flex-1 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
               ref={renameRef}
               type="text"
@@ -88,17 +88,22 @@ export default function KanbanColumn({ column, todos }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Escape") { setColumnName(column.name); setEditingName(false); }
               }}
-              onBlur={() => {
-                setTimeout(() => {
-                  if (document.activeElement !== renameRef.current) {
-                    setColumnName(column.name);
-                    setEditingName(false);
-                  }
-                }, 200);
-              }}
-              className="w-full rounded-lg bg-slate-900/70 border border-slate-600 px-2 py-1 text-base sm:text-sm text-slate-100
+              className="flex-1 min-w-0 rounded-lg bg-slate-900/70 border border-slate-600 px-2 py-1 text-base sm:text-sm text-slate-100
                 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            <button type="submit" aria-label="Save"
+              className="flex-shrink-0 p-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+            <button type="button" aria-label="Cancel"
+              onMouseDown={() => { setColumnName(column.name); setEditingName(false); }}
+              className="flex-shrink-0 p-1 rounded-lg border border-slate-700/60 text-slate-400 hover:text-slate-200 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </form>
         ) : (
           <>
