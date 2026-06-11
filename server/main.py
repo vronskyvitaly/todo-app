@@ -820,13 +820,29 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 )
                 if not col:
                     return
-                row = await conn.fetchrow(
-                    f"""UPDATE todos SET column_id = $2, board_id = $3, position = $4
-                        WHERE id = $1 AND user_id = $5
-                        RETURNING {TODO_COLS}""",
-                    uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"],
-                    position, uuid.UUID(user_id),
+                last_col = await conn.fetchrow(
+                    "SELECT id FROM columns WHERE board_id = $1 ORDER BY position DESC LIMIT 1",
+                    col["board_id"],
                 )
+                is_last = last_col and last_col["id"] == uuid.UUID(column_id)
+                if is_last:
+                    row = await conn.fetchrow(
+                        f"""UPDATE todos SET column_id = $2, board_id = $3, position = $4,
+                            completed = true, due_date = CURRENT_DATE
+                            WHERE id = $1 AND user_id = $5
+                            RETURNING {TODO_COLS}""",
+                        uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"],
+                        position, uuid.UUID(user_id),
+                    )
+                else:
+                    row = await conn.fetchrow(
+                        f"""UPDATE todos SET column_id = $2, board_id = $3, position = $4,
+                            completed = false
+                            WHERE id = $1 AND user_id = $5
+                            RETURNING {TODO_COLS}""",
+                        uuid.UUID(todo_id), uuid.UUID(column_id), col["board_id"],
+                        position, uuid.UUID(user_id),
+                    )
             if row:
                 await broadcast_to_user(user_id, {"type": "TODO_UPDATED", "payload": row_to_todo(row)})
 
