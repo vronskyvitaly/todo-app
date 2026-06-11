@@ -111,6 +111,22 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_sent_count INTEGER   NOT NULL DEFAULT 0;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_last_sent  DATE;
         """)
+        # One-time fix: reset recurring data that caused client-side crashes
+        already_fixed = await conn.fetchval("""
+            SELECT EXISTS(
+                SELECT FROM information_schema.columns
+                WHERE table_name='todos' AND column_name='recurring_reset_v1'
+            )
+        """)
+        if not already_fixed:
+            await conn.execute("""
+                UPDATE todos
+                SET recurring_days = '{}', recurring_time = '09:00',
+                    recurring_count = 0, recurring_sent_count = 0, recurring_last_sent = NULL
+            """)
+            await conn.execute(
+                "ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_reset_v1 BOOLEAN NOT NULL DEFAULT TRUE"
+            )
 
     scheduler.add_job(check_reminders, "interval", seconds=30, id="reminders")
     scheduler.start()
