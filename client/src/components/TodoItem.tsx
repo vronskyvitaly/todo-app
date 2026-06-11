@@ -103,7 +103,7 @@ export default function TodoItem({ todo }: Props) {
                 ? "text-red-400"
                 : "text-slate-500"
             }`}>
-              Due {todo.dueDate}
+              Due {new Date(todo.dueDate + "T00:00:00").toLocaleDateString("ru-RU")}
             </span>
           )}
           {todo.tags.map((tag) => (

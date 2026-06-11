@@ -118,7 +118,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
               !todo.completed && todo.dueDate < new Date().toISOString().slice(0, 10)
                 ? "text-red-400" : "text-slate-500"
             }`}>
-              {todo.dueDate}
+              {new Date(todo.dueDate + "T00:00:00").toLocaleDateString("ru-RU")}
             </span>
           )}
           {todo.tags.map((tag) => (
