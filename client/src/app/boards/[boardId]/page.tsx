@@ -42,43 +42,42 @@ export default function BoardPage({ params }: Props) {
         </div>
       ) : (
         <>
-          {/* Board header */}
+          {/* Board header — 2 rows on mobile */}
           <div className="flex-shrink-0 px-6 py-2 border-b border-slate-800/60">
-            <div className="max-w-4xl mx-auto flex items-center gap-3">
-              <button onClick={() => router.push("/boards")} className="text-slate-500 hover:text-slate-300 transition-colors" aria-label="Back">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-slate-200 truncate">{board.name}</h2>
-                {board.description && <p className="text-xs text-slate-400">{board.description}</p>}
-              </div>
-              {/* Tab navigation */}
-              <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
-                <button
-                  className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors"
-                  aria-current="page"
-                >
-                  Доска
+            <div className="max-w-4xl mx-auto space-y-1">
+              {/* Row 1: back + name + edit */}
+              <div className="flex items-center gap-3">
+                <button onClick={() => router.push("/boards")} className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Back">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
-                <button
-                  onClick={() => router.push(`/boards/${boardId}/notes`)}
-                  className="px-3 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  Заметки
+                <h2 className="flex-1 min-w-0 text-lg font-semibold text-slate-200 truncate">{board.name}</h2>
+                <button onClick={() => setEditingBoard(true)} className="flex-shrink-0 p-2 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 transition-colors" aria-label="Edit board">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
                 </button>
               </div>
-              <button onClick={() => setEditingBoard(true)} className="p-2 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 transition-colors" aria-label="Edit board">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
+              {/* Row 2: description + tabs */}
+              <div className="flex items-center gap-3 pl-8">
+                {board.description && (
+                  <p className="flex-1 min-w-0 text-xs text-slate-400 truncate">{board.description}</p>
+                )}
+                <div className="flex-shrink-0 flex items-center gap-1 bg-slate-800/60 rounded-lg p-1 ml-auto">
+                  <button className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors" aria-current="page">
+                    Доска
+                  </button>
+                  <button onClick={() => router.push(`/boards/${boardId}/notes`)} className="px-3 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+                    Заметки
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Kanban area */}
-          <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 py-4">
+          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-6 py-4">
             {isLoading ? <KanbanSkeleton /> : <KanbanBoard board={board} columns={columns} todos={todos} />}
           </div>
         </>
