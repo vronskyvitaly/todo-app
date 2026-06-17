@@ -44,7 +44,7 @@ TODO_COLS = (
     "priority, tags, board_id, column_id, position, reminder_at, reminder_sent, "
     "recurring_days, recurring_time, recurring_count"
 )
-BOARD_COLS  = "id, user_id, name, description, created_at"
+BOARD_COLS  = "id, user_id, name, description, notes, created_at"
 COLUMN_COLS = "id, board_id, name, position, created_at"
 
 
@@ -105,6 +105,7 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS position       INTEGER   NOT NULL DEFAULT 0;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_at      TIMESTAMPTZ;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_sent   BOOLEAN   NOT NULL DEFAULT FALSE;
+            ALTER TABLE boards ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT '';
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_days       INTEGER[] NOT NULL DEFAULT '{}';
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_time       TEXT      NOT NULL DEFAULT '09:00';
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_count      INTEGER   NOT NULL DEFAULT 0;
@@ -186,6 +187,7 @@ def row_to_board(r: asyncpg.Record) -> dict:
         "userId":      str(r["user_id"]),
         "name":        r["name"],
         "description": r["description"],
+        "notes":       r["notes"],
         "createdAt":   r["created_at"].isoformat(),
     }
 
@@ -770,6 +772,8 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 updates["name"] = name
             if "description" in payload:
                 updates["description"] = payload["description"].strip()
+            if "notes" in payload:
+                updates["notes"] = str(payload["notes"])
             if not updates:
                 return
 

@@ -23,6 +23,7 @@ export interface Board {
   userId: string;
   name: string;
   description: string;
+  notes: string;
   createdAt: string;
 }
 
