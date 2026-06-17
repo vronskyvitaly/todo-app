@@ -506,6 +506,20 @@ async def unsubscribe_push(request: Request):
 # ---------------------------------------------------------------------------
 # WebSocket
 # ---------------------------------------------------------------------------
+@app.get("/api/notes/{board_id}")
+async def get_public_notes(board_id: str):
+    """Public endpoint — no auth required. Returns board name + notes."""
+    try:
+        bid = uuid.UUID(board_id)
+    except ValueError:
+        raise HTTPException(status_code=404)
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT name, notes FROM boards WHERE id = $1", bid)
+    if not row:
+        raise HTTPException(status_code=404)
+    return {"name": row["name"], "notes": row["notes"]}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     token = websocket.query_params.get("token", "")
