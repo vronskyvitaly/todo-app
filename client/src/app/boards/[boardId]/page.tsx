@@ -59,12 +59,14 @@ export default function BoardPage({ params }: Props) {
                   </svg>
                 </button>
               </div>
-              {/* Row 2: description + tabs */}
-              <div className="flex items-center gap-3 pl-8">
-                {board.description && (
-                  <p className="flex-1 min-w-0 text-xs text-slate-400 truncate">{board.description}</p>
-                )}
-                <div className="flex-shrink-0 flex items-center gap-1 bg-slate-800/60 rounded-lg p-1 ml-auto">
+              {/* Row 2: description */}
+              {board.description && (
+                <p className="pl-8 text-xs text-slate-400 truncate">{board.description}</p>
+              )}
+
+              {/* Row 3: tabs */}
+              <div className="pl-8 flex items-center gap-1">
+                <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
                   <button className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors" aria-current="page">
                     Доска
                   </button>

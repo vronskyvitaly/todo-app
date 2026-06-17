@@ -47,6 +47,7 @@ export default function BoardNotesPage({ params }: Props) {
   return (
     <main className="h-[100dvh] flex flex-col bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950">
 
+      {/* NavBar */}
       <div className="flex-shrink-0 px-6 pt-6 pb-3">
         <div className="max-w-4xl mx-auto">
           <NavBar />
@@ -64,12 +65,17 @@ export default function BoardNotesPage({ params }: Props) {
         </div>
       ) : (
         <>
-          {/* Header — 2 rows */}
+          {/* Header: 3 rows */}
           <div className="flex-shrink-0 px-6 py-2 border-b border-slate-800/60">
-            <div className="max-w-4xl mx-auto space-y-1">
+            <div className="max-w-4xl mx-auto space-y-1.5">
+
               {/* Row 1: back + name + save indicator */}
               <div className="flex items-center gap-3">
-                <button onClick={() => router.push("/boards")} className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Back">
+                <button
+                  onClick={() => router.push("/boards")}
+                  className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
+                  aria-label="Back"
+                >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
@@ -79,32 +85,44 @@ export default function BoardNotesPage({ params }: Props) {
                   {saved ? "Сохранено" : "Сохранение..."}
                 </span>
               </div>
-              {/* Row 2: description + tabs */}
-              <div className="flex items-center gap-3 pl-8">
-                {board.description && (
-                  <p className="flex-1 min-w-0 text-xs text-slate-400 truncate">{board.description}</p>
-                )}
-                <div className="flex-shrink-0 flex items-center gap-1 bg-slate-800/60 rounded-lg p-1 ml-auto">
-                  <button onClick={() => router.push(`/boards/${boardId}`)} className="px-3 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors">
+
+              {/* Row 2: description */}
+              {board.description && (
+                <p className="pl-8 text-xs text-slate-400 truncate">{board.description}</p>
+              )}
+
+              {/* Row 3: tabs */}
+              <div className="pl-8 flex items-center gap-1">
+                <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
+                  <button
+                    onClick={() => router.push(`/boards/${boardId}`)}
+                    className="px-3 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                  >
                     Доска
                   </button>
-                  <button className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors" aria-current="page">
+                  <button
+                    className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors"
+                    aria-current="page"
+                  >
                     Заметки
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
 
-          {/* Notes editor — flex-1 min-h-0 ensures it shrinks and scrolls independently */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-            <div className="max-w-4xl mx-auto h-full">
+          {/* Notes editor: overflow-y-auto so it scrolls independently.
+              textarea uses min-h-[60svh] — svh doesn't change when keyboard
+              opens, so the textarea stays stable and cursor never jumps. */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-10">
+            <div className="max-w-4xl mx-auto">
               <textarea
                 value={notes}
                 onChange={handleChange}
                 onBlur={() => { if (!saved) save(notes); }}
-                placeholder={"Начните писать заметки о проекте...\n\nЗдесь можно записывать:\n• Цели и задачи проекта\n• Ссылки и ресурсы\n• Договорённости и решения"}
-                className="w-full h-full min-h-[200px] bg-transparent text-base sm:text-sm text-slate-200
+                placeholder={"Начните писать заметки о проекте...\n\nЗдесь можно записывать:\n• Цели и задачи\n• Ссылки и ресурсы\n• Договорённости и решения"}
+                className="w-full min-h-[60svh] bg-transparent text-base sm:text-sm text-slate-200
                   placeholder-slate-700 resize-none focus:outline-none leading-relaxed"
               />
             </div>
