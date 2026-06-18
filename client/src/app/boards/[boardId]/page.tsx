@@ -25,7 +25,7 @@ export default function BoardPage({ params }: Props) {
   return (
     <main className="h-[100dvh] flex flex-col bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950 overflow-hidden">
 
-      <div className="flex-shrink-0 px-6 pt-6 pb-3">
+      <div className="flex-shrink-0 px-6 pt-6 pb-6">
         <div className="max-w-4xl mx-auto">
           <NavBar />
         </div>
