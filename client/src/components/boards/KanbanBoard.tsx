@@ -17,6 +17,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 
 interface Props {
   board: Board;
@@ -27,6 +32,7 @@ interface Props {
 export default function KanbanBoard({ board, columns, todos }: Props) {
   const dispatch = useAppDispatch();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<"card" | "column">("card");
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
 
@@ -35,21 +41,40 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
+  const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
   const activeTodo = todos.find((t) => t.id === activeId) ?? null;
+  const activeColumn = sortedColumns.find((c) => c.id === activeId) ?? null;
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(active.id as string);
+    setActiveType((active.data.current?.type ?? "card") as "card" | "column");
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     setActiveId(null);
-    if (!over) return;
-    const columnId = over.id as string;
-    const position = (over.data.current?.count ?? 0) as number;
-    dispatch({
-      type: WS_SEND,
-      payload: { type: "MOVE_CARD", payload: { id: active.id as string, columnId, position } },
-    });
+    if (!over || active.id === over.id) return;
+
+    if (activeType === "column") {
+      const oldIndex = sortedColumns.findIndex((c) => c.id === active.id);
+      const newIndex = sortedColumns.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+      const reordered = arrayMove(sortedColumns, oldIndex, newIndex);
+      reordered.forEach((col, idx) => {
+        if (col.position !== idx) {
+          dispatch({
+            type: WS_SEND,
+            payload: { type: "UPDATE_COLUMN", payload: { id: col.id, position: idx } },
+          });
+        }
+      });
+    } else {
+      const columnId = over.id as string;
+      const position = (over.data.current?.count ?? 0) as number;
+      dispatch({
+        type: WS_SEND,
+        payload: { type: "MOVE_CARD", payload: { id: active.id as string, columnId, position } },
+      });
+    }
   };
 
   const handleAddColumn = (e: React.FormEvent) => {
@@ -67,8 +92,6 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
     setAddingColumn(false);
   };
 
-  const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
-
   return (
     <DndContext
       sensors={sensors}
@@ -76,34 +99,42 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 h-full items-start">
-        {sortedColumns.map((col) => (
-          <KanbanColumn
-            key={col.id}
-            column={col}
-            todos={todos.filter((t) => t.columnId === col.id)}
-          />
-        ))}
+      <SortableContext items={sortedColumns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+        <div className="flex gap-4 h-full items-start">
+          {sortedColumns.map((col) => (
+            <KanbanColumn
+              key={col.id}
+              column={col}
+              todos={todos.filter((t) => t.columnId === col.id)}
+            />
+          ))}
 
-        {/* Add column button — always visible at end of scroll */}
-        <div className="flex-shrink-0 w-[78vw] sm:w-72">
-          <button
-            onClick={() => setAddingColumn(true)}
-            className="w-full flex items-center gap-2 bg-slate-800/30 border border-dashed border-slate-700/50
-              hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-2xl px-4 py-3 text-sm text-slate-500
-              hover:text-slate-300 transition-all duration-150"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add column
-          </button>
+          {/* Add column button — always visible at end of scroll */}
+          <div className="flex-shrink-0 w-[78vw] sm:w-72">
+            <button
+              onClick={() => setAddingColumn(true)}
+              className="w-full flex items-center gap-2 bg-slate-800/30 border border-dashed border-slate-700/50
+                hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-2xl px-4 py-3 text-sm text-slate-500
+                hover:text-slate-300 transition-all duration-150"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Add column
+            </button>
+          </div>
         </div>
-      </div>
+      </SortableContext>
 
       {/* Ghost card that follows the pointer */}
       <DragOverlay dropAnimation={null}>
-        {activeTodo ? <KanbanCard todo={activeTodo} isOverlay /> : null}
+        {activeId && activeType === "card" && activeTodo ? (
+          <KanbanCard todo={activeTodo} isOverlay />
+        ) : activeId && activeType === "column" && activeColumn ? (
+          <div className="flex-shrink-0 w-[78vw] sm:w-72 rounded-2xl bg-slate-800/80 border border-indigo-500/50 shadow-2xl opacity-90 rotate-1 px-4 py-3">
+            <span className="font-semibold text-slate-200 text-sm">{activeColumn.name}</span>
+          </div>
+        ) : null}
       </DragOverlay>
 
       {/* Add column modal — fixed, never clipped by scroll */}

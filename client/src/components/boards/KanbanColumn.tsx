@@ -4,7 +4,8 @@ import { useState, useRef } from "react";
 import { Column, Todo } from "@/types/todo";
 import { useAppDispatch } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
-import { useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import KanbanCard from "./KanbanCard";
 
 interface Props {
@@ -21,9 +22,17 @@ export default function KanbanColumn({ column, todos }: Props) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
 
-  const { setNodeRef, isOver } = useDroppable({
+  const {
+    setNodeRef,
+    transform,
+    transition,
+    listeners,
+    attributes,
+    isDragging,
+    isOver,
+  } = useSortable({
     id: column.id,
-    data: { count: todos.length },
+    data: { type: "column", count: todos.length },
   });
 
   const openAddCard = () => {
@@ -73,11 +82,31 @@ export default function KanbanColumn({ column, todos }: Props) {
   return (
     <div
       ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`flex-shrink-0 w-[78vw] sm:w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
+        ${isDragging ? "opacity-30" : ""}
         ${isOver ? "border-indigo-500/60 bg-slate-700/40" : "border-slate-700/30"}`}
     >
       {/* Header */}
-      <div className="group flex items-center justify-between px-4 pt-4 pb-2">
+      <div className="group flex items-center gap-1 px-3 pt-4 pb-2">
+        {/* Drag handle */}
+        <button
+          {...listeners}
+          {...attributes}
+          className="flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 touch-none transition-colors"
+          aria-label="Drag column"
+          tabIndex={-1}
+        >
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+            <circle cx="5" cy="3.5" r="1.2" />
+            <circle cx="11" cy="3.5" r="1.2" />
+            <circle cx="5" cy="8" r="1.2" />
+            <circle cx="11" cy="8" r="1.2" />
+            <circle cx="5" cy="12.5" r="1.2" />
+            <circle cx="11" cy="12.5" r="1.2" />
+          </svg>
+        </button>
+
         {editingName ? (
           <form onSubmit={handleRenameColumn} className="flex-1 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
@@ -109,11 +138,11 @@ export default function KanbanColumn({ column, todos }: Props) {
           <>
             <button
               onClick={() => { setColumnName(column.name); setEditingName(true); setTimeout(() => renameRef.current?.focus(), 50); }}
-              className="font-semibold text-slate-200 text-sm hover:text-indigo-400 transition-colors text-left"
+              className="flex-1 min-w-0 font-semibold text-slate-200 text-sm hover:text-indigo-400 transition-colors text-left truncate"
             >
               {column.name}
             </button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-xs text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded-md">
                 {todos.length}
               </span>
