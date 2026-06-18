@@ -27,9 +27,13 @@ export default function BoardsPage() {
 
   return (
     <main className="min-h-screen bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950">
-      <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
-        <NavBar />
+      <div className="flex-shrink-0 pt-6 pb-3">
+        <div className="max-w-4xl mx-auto px-6">
+          <NavBar />
+        </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto px-6 pt-8 pb-12 space-y-6">
         {/* Boards header */}
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-200">Boards</h2>
