@@ -25,7 +25,7 @@ export default function BoardPage({ params }: Props) {
   return (
     <main className="h-[100dvh] flex flex-col bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950 overflow-hidden">
 
-      <div className="flex-shrink-0 px-6 pt-6 pb-6">
+      <div className="flex-shrink-0 px-6 pt-6 pb-3">
         <div className="max-w-4xl mx-auto">
           <NavBar />
         </div>
@@ -43,8 +43,8 @@ export default function BoardPage({ params }: Props) {
       ) : (
         <>
           {/* Sub-header — identical structure to notes page for stable height */}
-          <div className="flex-shrink-0 px-6 py-2 border-b border-slate-800/60">
-            <div className="max-w-4xl mx-auto space-y-1.5">
+          <div className="flex-shrink-0 px-6 py-1 border-b border-slate-800/60">
+            <div className="max-w-4xl mx-auto space-y-1">
 
               {/* Row 1: back · name · edit */}
               <div className="flex items-center gap-2">
