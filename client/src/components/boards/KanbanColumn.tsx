@@ -73,7 +73,7 @@ export default function KanbanColumn({ column, todos }: Props) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-[96vw] sm:w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
+      className={`flex-shrink-0 w-[78vw] sm:w-72 flex flex-col rounded-2xl bg-slate-800/40 border transition-colors duration-150 self-stretch
         ${isOver ? "border-indigo-500/60 bg-slate-700/40" : "border-slate-700/30"}`}
     >
       {/* Header */}

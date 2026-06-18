@@ -86,7 +86,7 @@ export default function KanbanBoard({ board, columns, todos }: Props) {
         ))}
 
         {/* Add column button — always visible at end of scroll */}
-        <div className="flex-shrink-0 w-[82vw] sm:w-72">
+        <div className="flex-shrink-0 w-[78vw] sm:w-72">
           <button
             onClick={() => setAddingColumn(true)}
             className="w-full flex items-center gap-2 bg-slate-800/30 border border-dashed border-slate-700/50

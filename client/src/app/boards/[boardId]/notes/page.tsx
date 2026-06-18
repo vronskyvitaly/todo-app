@@ -26,10 +26,7 @@ export default function BoardNotesPage({ params }: Props) {
 
   const save = useCallback((text: string) => {
     if (!board) return;
-    dispatch({
-      type: WS_SEND,
-      payload: { type: "UPDATE_BOARD", payload: { id: board.id, notes: text } },
-    });
+    dispatch({ type: WS_SEND, payload: { type: "UPDATE_BOARD", payload: { id: board.id, notes: text } } });
     setSaved(true);
   }, [board, dispatch]);
 
@@ -42,8 +39,7 @@ export default function BoardNotesPage({ params }: Props) {
   };
 
   const handleShare = () => {
-    const url = `${window.location.origin}/share/${boardId}`;
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(`${window.location.origin}/share/${boardId}`).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -54,7 +50,6 @@ export default function BoardNotesPage({ params }: Props) {
   }, []);
 
   return (
-    // overflow-hidden prevents iOS from scrolling the whole page instead of just the textarea
     <main className="h-[100dvh] flex flex-col overflow-hidden bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950">
 
       <div className="flex-shrink-0 px-6 pt-6 pb-3">
@@ -74,66 +69,53 @@ export default function BoardNotesPage({ params }: Props) {
         </div>
       ) : (
         <>
-          {/* Header — flex-shrink-0 so it never scrolls away */}
+          {/* Sub-header — identical structure to board page for stable height */}
           <div className="flex-shrink-0 px-6 py-2 border-b border-slate-800/60">
             <div className="max-w-4xl mx-auto space-y-1.5">
 
-              {/* Row 1: back + name + saved indicator */}
-              <div className="flex items-center gap-3">
+              {/* Row 1: back · name · save indicator (same fixed h-8 area as edit button) */}
+              <div className="flex items-center gap-2">
                 <button onClick={() => router.push("/boards")} className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Back">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h2 className="flex-1 min-w-0 text-lg font-semibold text-slate-200 truncate">{board.name}</h2>
-                <span className={`flex-shrink-0 text-xs transition-colors duration-300 ${saved ? "text-slate-600" : "text-indigo-400"}`}>
-                  {saved ? "Сохранено" : "Сохранение..."}
-                </span>
+                <h2 className="flex-1 min-w-0 text-base font-semibold text-slate-200 truncate">{board.name}</h2>
+                {/* Same w-8 h-8 area as edit button on board page */}
+                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                  <span className={`text-xs transition-colors duration-300 ${saved ? "text-slate-600" : "text-indigo-400"}`}>
+                    {saved ? "●" : "○"}
+                  </span>
+                </div>
               </div>
 
-              {/* Row 2: description */}
+              {/* Row 2: description — renders only if present (same on both pages) */}
               {board.description && (
-                <p className="pl-8 text-xs text-slate-400 truncate">{board.description}</p>
+                <p className="pl-7 text-xs text-slate-400 truncate">{board.description}</p>
               )}
 
-              {/* Row 3: tabs + share button */}
-              <div className="pl-8 flex items-center justify-between gap-3">
+              {/* Row 3: tabs centered + share button */}
+              <div className="flex items-center justify-center gap-3">
                 <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
                   <button
                     onClick={() => router.push(`/boards/${boardId}`)}
-                    className="px-3 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    className="px-4 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
                   >
                     Доска
                   </button>
-                  <button
-                    className="px-3 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors"
-                    aria-current="page"
-                  >
+                  <button className="px-4 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors" aria-current="page">
                     Заметки
                   </button>
                 </div>
-
-                {/* Share button */}
                 <button
                   onClick={handleShare}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                    text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-slate-700/50
-                    transition-all duration-150"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-slate-400
+                    hover:text-slate-200 hover:bg-slate-800/60 border border-slate-700/50 transition-all"
                 >
                   {copied ? (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-emerald-400">Скопировано</span>
-                    </>
+                    <><svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400">Скопировано</span></>
                   ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                      Поделиться
-                    </>
+                    <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>Поделиться</>
                   )}
                 </button>
               </div>
@@ -141,7 +123,7 @@ export default function BoardNotesPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Notes textarea — only this area scrolls */}
+          {/* Notes area — only this scrolls */}
           <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-10">
             <div className="max-w-4xl mx-auto">
               <textarea
