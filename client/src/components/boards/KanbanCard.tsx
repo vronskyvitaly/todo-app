@@ -71,7 +71,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
           )}
         </button>
 
-        <p className={`flex-1 min-w-0 text-[11px] font-medium leading-snug break-words
+        <p className={`flex-1 min-w-0 text-[11px] font-medium leading-snug break-anywhere
           ${todo.completed ? "line-through text-slate-500" : "text-slate-100"}`}>
           {todo.title}
         </p>
