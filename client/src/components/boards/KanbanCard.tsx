@@ -99,7 +99,7 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
       {(todo.description || todo.dueDate || (todo.tags?.length ?? 0) > 0 || todo.important || todo.priority !== "normal" || (todo.recurringDays?.length ?? 0) > 0) && (
         <div className="mt-1 ml-5 flex items-center gap-1 flex-wrap">
           {todo.description && (
-            <span className="text-[10px] text-slate-500 w-full">{todo.description}</span>
+            <span className="text-[10px] text-slate-500 w-full break-anywhere">{todo.description}</span>
           )}
           {todo.important && (
             <svg className="w-3 h-3 text-amber-400 flex-shrink-0 drop-shadow-[0_0_3px_rgba(251,191,36,0.7)]" fill="currentColor" viewBox="0 0 24 24">
