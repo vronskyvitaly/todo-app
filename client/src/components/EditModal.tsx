@@ -140,17 +140,6 @@ export default function EditModal() {
               </svg>
               Important
             </button>
-            <div className="flex-1 sm:flex-none">
-              <select
-                {...register("priority")}
-                className="w-full sm:w-auto rounded-xl bg-slate-900/70 border border-slate-700/60 px-3 py-2 text-sm text-slate-100
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-              >
-                <option value="low">↓ Low priority</option>
-                <option value="normal">→ Normal priority</option>
-                <option value="high">↑ High priority</option>
-              </select>
-            </div>
           </div>
 
           {/* Due date + Tags */}
