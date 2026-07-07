@@ -102,7 +102,7 @@ export default function EditModal() {
               rows={3}
               {...register("title")}
               className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none sm:min-h-[7rem]
                 ${errors.title ? "border-red-500/70" : "border-slate-700/60"}`}
             />
             {errors.title && (
@@ -118,7 +118,7 @@ export default function EditModal() {
               rows={3}
               {...register("description")}
               className={`w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100
-                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none sm:min-h-[9rem]
                 ${errors.description ? "border-red-500/70" : "border-slate-700/60"}`}
             />
           </div>

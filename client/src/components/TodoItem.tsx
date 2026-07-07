@@ -21,7 +21,7 @@ function renderWithLinks(text: string) {
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="text-indigo-400 hover:text-indigo-300 underline break-anywhere transition-colors"
+        className="block min-w-0 w-full text-indigo-400 hover:text-indigo-300 underline truncate transition-colors"
       >
         {part}
       </a>
