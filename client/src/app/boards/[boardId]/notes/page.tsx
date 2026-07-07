@@ -10,6 +10,36 @@ interface Props {
   params: { boardId: string };
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderWithLinks(text: string) {
+  const lines = text.split("\n");
+  return lines.map((line, li) => {
+    const parts = line.split(URL_REGEX);
+    return (
+      <span key={li}>
+        {parts.map((part, pi) =>
+          URL_REGEX.test(part) ? (
+            <a
+              key={pi}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-indigo-400 hover:text-indigo-300 underline break-anywhere transition-colors"
+            >
+              {part}
+            </a>
+          ) : (
+            <span key={pi}>{part}</span>
+          )
+        )}
+        {li < lines.length - 1 && <br />}
+      </span>
+    );
+  });
+}
+
 export default function BoardNotesPage({ params }: Props) {
   const { boardId } = params;
   const router = useRouter();
@@ -18,7 +48,9 @@ export default function BoardNotesPage({ params }: Props) {
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setNotes(board?.notes ?? "");
@@ -125,15 +157,29 @@ export default function BoardNotesPage({ params }: Props) {
 
           {/* Notes area — only this scrolls */}
           <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-10">
-            <div className="max-w-4xl mx-auto">
-              <textarea
-                value={notes}
-                onChange={handleChange}
-                onBlur={() => { if (!saved) save(notes); }}
-                placeholder={"Начните писать заметки о проекте...\n\nЗдесь можно записывать:\n• Цели и задачи\n• Ссылки и ресурсы\n• Договорённости и решения"}
-                className="w-full min-h-[60svh] bg-transparent text-base sm:text-sm text-slate-200
-                  placeholder-slate-700 resize-none focus:outline-none leading-relaxed"
-              />
+            <div className="max-w-4xl mx-auto min-h-[60svh]">
+              {editing ? (
+                <textarea
+                  ref={textareaRef}
+                  value={notes}
+                  onChange={handleChange}
+                  onBlur={() => { setEditing(false); if (!saved) save(notes); }}
+                  placeholder={"Начните писать заметки о проекте...\n\nЗдесь можно записывать:\n• Цели и задачи\n• Ссылки и ресурсы\n• Договорённости и решения"}
+                  className="w-full min-h-[60svh] bg-transparent text-base sm:text-sm text-slate-200
+                    placeholder-slate-700 resize-none focus:outline-none leading-relaxed"
+                />
+              ) : (
+                <div
+                  onClick={() => { setEditing(true); setTimeout(() => textareaRef.current?.focus(), 0); }}
+                  className="w-full min-h-[60svh] text-base sm:text-sm text-slate-200 leading-relaxed cursor-text whitespace-pre-wrap break-anywhere"
+                >
+                  {notes ? renderWithLinks(notes) : (
+                    <span className="text-slate-700">
+                      {"Начните писать заметки о проекте...\n\nЗдесь можно записывать:\n• Цели и задачи\n• Ссылки и ресурсы\n• Договорённости и решения"}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </>
