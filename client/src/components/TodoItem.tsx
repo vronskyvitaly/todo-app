@@ -9,6 +9,28 @@ interface Props {
   todo: Todo;
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderWithLinks(text: string) {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="text-indigo-400 hover:text-indigo-300 underline break-anywhere transition-colors"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function TodoItem({ todo }: Props) {
   const dispatch = useAppDispatch();
   const connected = useAppSelector((s) => s.todos.connected);
@@ -92,8 +114,8 @@ export default function TodoItem({ todo }: Props) {
           )}
         </div>
         {todo.description && (
-          <p className="mt-1 text-xs text-slate-400 break-words leading-relaxed">
-            {todo.description}
+          <p className="mt-1 text-xs text-slate-400 break-anywhere leading-relaxed">
+            {renderWithLinks(todo.description)}
           </p>
         )}
         <div className="mt-1.5 flex items-center gap-2 flex-wrap">
