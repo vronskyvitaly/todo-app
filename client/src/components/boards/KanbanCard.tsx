@@ -11,6 +11,8 @@ interface Props {
   isOverlay?: boolean;
 }
 
+const isUrl = (str: string) => /^https?:\/\//i.test(str.trim());
+
 export default function KanbanCard({ todo, isOverlay = false }: Props) {
   const dispatch = useAppDispatch();
 
@@ -99,7 +101,19 @@ export default function KanbanCard({ todo, isOverlay = false }: Props) {
       {(todo.description || todo.dueDate || (todo.tags?.length ?? 0) > 0 || todo.important || todo.priority !== "normal" || (todo.recurringDays?.length ?? 0) > 0) && (
         <div className="mt-1 ml-5 min-w-0 flex items-center gap-1 flex-wrap">
           {todo.description && (
-            <span className="block min-w-0 w-full text-[10px] text-slate-500 break-anywhere">{todo.description}</span>
+            isUrl(todo.description) ? (
+              <a
+                href={todo.description}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block min-w-0 w-full text-[10px] text-indigo-400 hover:text-indigo-300 truncate transition-colors"
+              >
+                {todo.description}
+              </a>
+            ) : (
+              <span className="block min-w-0 w-full text-[10px] text-slate-500 break-anywhere">{todo.description}</span>
+            )
           )}
           {todo.important && (
             <svg className="w-3 h-3 text-amber-400 flex-shrink-0 drop-shadow-[0_0_3px_rgba(251,191,36,0.7)]" fill="currentColor" viewBox="0 0 24 24">
