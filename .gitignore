@@ -11,5 +11,11 @@ client/.env.local
 # OS
 .DS_Store
 
+# Playwright / test artifacts
+.playwright-mcp/
+/*.png
+
 CLAUDE.md
 .claude
+
+PROJECT_TASKS.md
