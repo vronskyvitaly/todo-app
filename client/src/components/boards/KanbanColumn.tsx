@@ -89,26 +89,28 @@ export default function KanbanColumn({ column, todos }: Props) {
     >
       {/* Header */}
       <div className="group flex items-center gap-1 px-3 pt-4 pb-2">
-        {/* Drag handle */}
-        <button
-          {...listeners}
-          {...attributes}
-          className="flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 touch-none transition-colors"
-          aria-label="Drag column"
-          tabIndex={-1}
-        >
-          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
-            <circle cx="5" cy="3.5" r="1.2" />
-            <circle cx="11" cy="3.5" r="1.2" />
-            <circle cx="5" cy="8" r="1.2" />
-            <circle cx="11" cy="8" r="1.2" />
-            <circle cx="5" cy="12.5" r="1.2" />
-            <circle cx="11" cy="12.5" r="1.2" />
-          </svg>
-        </button>
+        {/* Drag handle — hidden while renaming to free horizontal space */}
+        {!editingName && (
+          <button
+            {...listeners}
+            {...attributes}
+            className="flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 touch-none transition-colors"
+            aria-label="Drag column"
+            tabIndex={-1}
+          >
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+              <circle cx="5" cy="3.5" r="1.2" />
+              <circle cx="11" cy="3.5" r="1.2" />
+              <circle cx="5" cy="8" r="1.2" />
+              <circle cx="11" cy="8" r="1.2" />
+              <circle cx="5" cy="12.5" r="1.2" />
+              <circle cx="11" cy="12.5" r="1.2" />
+            </svg>
+          </button>
+        )}
 
         {editingName ? (
-          <form onSubmit={handleRenameColumn} className="flex-1 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <form onSubmit={handleRenameColumn} className="flex-1 min-w-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <input
               ref={renameRef}
               type="text"
