@@ -106,7 +106,7 @@ export default function BoardNotesPage({ params }: Props) {
           <div className="flex-shrink-0 py-1 border-b border-slate-800/60">
             <div className="max-w-4xl mx-auto px-6 space-y-1">
 
-              {/* Row 1: back · name · save indicator (same fixed h-8 area as edit button) */}
+              {/* Row 1: back · name · description · save indicator (same fixed h-8 area as edit button) */}
               <div className="flex items-center gap-2">
                 <button onClick={() => router.push("/boards")} className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Back">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -114,6 +114,9 @@ export default function BoardNotesPage({ params }: Props) {
                   </svg>
                 </button>
                 <h2 className="flex-1 min-w-0 text-base font-semibold text-slate-200 truncate">{board.name}</h2>
+                {board.description && (
+                  <BoardDescription name={board.name} description={board.description} />
+                )}
                 {/* Same w-8 h-8 area as edit button on board page */}
                 <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
                   <span className={`text-xs transition-colors duration-300 ${saved ? "text-slate-600" : "text-indigo-400"}`}>
@@ -122,12 +125,7 @@ export default function BoardNotesPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Row 2: description — renders only if present (same on both pages) */}
-              {board.description && (
-                <BoardDescription name={board.name} description={board.description} />
-              )}
-
-              {/* Row 3: tabs centered + share button */}
+              {/* Row 2: tabs centered + share button */}
               <div className="flex items-center justify-center gap-3">
                 <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
                   <button

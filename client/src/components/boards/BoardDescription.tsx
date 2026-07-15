@@ -42,20 +42,17 @@ export default function BoardDescription({ name, description }: Props) {
 
   return (
     <>
-      <div className="pl-7">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-500/30
-            bg-indigo-500/10 text-xs font-medium text-indigo-300
-            hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Описание проекта
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60 transition-colors"
+        aria-label="Описание доски"
+        title="Описание доски"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
 
       {open && (
         <div
