@@ -634,6 +634,10 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
             position    = int(payload.get("position", 0))
             reminder_at = parse_reminder(payload.get("reminderAt"))
 
+            recurring_days  = [int(d) for d in payload.get("recurringDays", []) if 0 <= int(d) <= 6]
+            recurring_time  = str(payload.get("recurringTime", "09:00"))[:5]
+            recurring_count = max(0, int(payload.get("recurringCount", 0)))
+
             board_uuid  = uuid.UUID(board_id)  if board_id  else None
             column_uuid = uuid.UUID(column_id) if column_id else None
 
@@ -641,12 +645,14 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 row = await conn.fetchrow(
                     f"""INSERT INTO todos
                            (user_id, title, description, important, due_date, priority, tags,
-                            board_id, column_id, position, reminder_at)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                            board_id, column_id, position, reminder_at,
+                            recurring_days, recurring_time, recurring_count)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                         RETURNING {TODO_COLS}""",
                     uuid.UUID(user_id), title, description,
                     important, due_date, priority, tags,
                     board_uuid, column_uuid, position, reminder_at,
+                    recurring_days, recurring_time, recurring_count,
                 )
             await broadcast_to_user(user_id, {"type": "TODO_CREATED", "payload": row_to_todo(row)})
 

@@ -1,33 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { todoSchema, TodoFormValues, formToPayload } from "@/lib/validations";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { WS_SEND } from "@/store/wsMiddleware";
+import RecurringPicker, { RecurringSettings, defaultRecurring } from "@/components/RecurringPicker";
 
 const inputCls = (err?: boolean) =>
-  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base text-slate-100 placeholder-slate-500
+  `w-full rounded-xl bg-slate-900/70 border px-4 py-2.5 text-base sm:text-sm text-slate-100 placeholder-slate-500
    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
    disabled:opacity-40 disabled:cursor-not-allowed
    ${err ? "border-red-500/70" : "border-slate-700/60"}`;
-
-const selectCls =
-  `w-full appearance-none rounded-xl bg-slate-900/70 border border-slate-700/60 pl-4 pr-10 py-2.5
-   text-base sm:text-sm text-slate-100 cursor-pointer
-   focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors
-   disabled:opacity-40 disabled:cursor-not-allowed`;
-
-function SelectChevron() {
-  return (
-    <svg
-      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-}
 
 interface Props {
   onClose: () => void;
@@ -36,6 +21,7 @@ interface Props {
 export default function TodoForm({ onClose }: Props) {
   const dispatch = useAppDispatch();
   const connected = useAppSelector((s) => s.todos.connected);
+  const [recurring, setRecurring] = useState<RecurringSettings>(defaultRecurring);
 
   const {
     register,
@@ -54,9 +40,18 @@ export default function TodoForm({ onClose }: Props) {
   const onSubmit = (data: TodoFormValues) => {
     dispatch({
       type: WS_SEND,
-      payload: { type: "CREATE_TODO", payload: formToPayload(data) },
+      payload: {
+        type: "CREATE_TODO",
+        payload: {
+          ...formToPayload(data),
+          recurringDays:  recurring.enabled ? recurring.days : [],
+          recurringTime:  recurring.time,
+          recurringCount: recurring.enabled ? recurring.repeatCount : 0,
+        },
+      },
     });
     reset();
+    setRecurring(defaultRecurring);
     onClose();
   };
 
@@ -89,12 +84,12 @@ export default function TodoForm({ onClose }: Props) {
             </label>
             <textarea
               id="title"
-              rows={2}
+              rows={3}
               autoFocus
               placeholder="What needs to be done?"
               disabled={!connected}
               {...register("title")}
-              className={inputCls(!!errors.title) + " resize-none"}
+              className={inputCls(!!errors.title) + " resize-none sm:min-h-[7rem]"}
             />
             {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
           </div>
@@ -106,15 +101,15 @@ export default function TodoForm({ onClose }: Props) {
             </label>
             <textarea
               id="description"
-              rows={2}
+              rows={3}
               placeholder="Optional details..."
               disabled={!connected}
               {...register("description")}
-              className={inputCls(!!errors.description) + " resize-none"}
+              className={inputCls(!!errors.description) + " resize-none sm:min-h-[9rem]"}
             />
           </div>
 
-          {/* Important + Priority */}
+          {/* Important */}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -132,18 +127,6 @@ export default function TodoForm({ onClose }: Props) {
               </svg>
               Important
             </button>
-            <div className="flex-1 relative">
-              <select
-                disabled={!connected}
-                {...register("priority")}
-                className={selectCls}
-              >
-                <option value="low">↓ Low priority</option>
-                <option value="normal">→ Normal priority</option>
-                <option value="high">↑ High priority</option>
-              </select>
-              <SelectChevron />
-            </div>
           </div>
 
           {/* Due date + Tags */}
@@ -204,27 +187,8 @@ export default function TodoForm({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Reminder */}
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-slate-400">Remind me</label>
-            <div className="relative">
-              <select
-                disabled={!connected}
-                {...register("reminderMinutes")}
-                className={selectCls}
-              >
-                <option value="">No reminder</option>
-                <option value="1">In 1 minute</option>
-                <option value="5">In 5 minutes</option>
-                <option value="15">In 15 minutes</option>
-                <option value="30">In 30 minutes</option>
-                <option value="60">In 1 hour</option>
-                <option value="120">In 2 hours</option>
-                <option value="1440">Tomorrow</option>
-              </select>
-              <SelectChevron />
-            </div>
-          </div>
+          {/* Recurring reminder */}
+          <RecurringPicker value={recurring} onChange={setRecurring} />
 
           <div className="flex gap-3 pt-1">
             <button
