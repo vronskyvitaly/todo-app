@@ -15,7 +15,7 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 - Real-time sync across tabs
 
 **Kanban Boards**
-- Create boards with name and description
+- Create boards with name and description (full description opens in a modal)
 - Drag & drop cards between columns via @dnd-kit
 - Drag & drop columns to reorder them
 - Click any column to instantly add a card inline

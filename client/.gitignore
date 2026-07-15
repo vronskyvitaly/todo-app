@@ -4,4 +4,4 @@ out/
 .env.local
 .DS_Store
 *.tsbuildinfo
-PROJECT_INFO.md
+PROJECT_TASKS.md
