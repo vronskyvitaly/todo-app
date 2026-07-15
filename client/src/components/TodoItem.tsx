@@ -65,7 +65,7 @@ export default function TodoItem({ todo }: Props) {
 
   return (
     <div
-      className={`group flex items-start gap-4 rounded-xl border px-5 py-4 transition-all duration-200 animate-fade-in
+      className={`group flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 rounded-xl border px-4 sm:px-5 py-4 transition-all duration-200 animate-fade-in
         ${
           todo.archived
             ? "bg-slate-800/20 border-slate-700/30 border-dashed opacity-50"
@@ -76,34 +76,35 @@ export default function TodoItem({ todo }: Props) {
                 : "bg-slate-800/60 border-slate-700/50 hover:border-slate-600/60"
         }`}
     >
-      {/* Checkbox */}
-      <button
-        onClick={toggle}
-        disabled={!connected}
-        aria-label="Toggle complete"
-        className={`mt-0.5 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors
-          disabled:cursor-not-allowed
-          ${
-            todo.completed
-              ? "bg-emerald-500 border-emerald-500"
-              : "border-slate-600 hover:border-indigo-400"
-          }`}
-      >
-        {todo.completed && (
-          <svg
-            className="w-3 h-3 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        )}
-      </button>
+      <div className="flex items-start gap-3 sm:gap-4 min-w-0 sm:flex-1">
+        {/* Checkbox */}
+        <button
+          onClick={toggle}
+          disabled={!connected}
+          aria-label="Toggle complete"
+          className={`mt-0.5 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors
+            disabled:cursor-not-allowed
+            ${
+              todo.completed
+                ? "bg-emerald-500 border-emerald-500"
+                : "border-slate-600 hover:border-indigo-400"
+            }`}
+        >
+          {todo.completed && (
+            <svg
+              className="w-3 h-3 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </button>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 space-y-2">
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-2">
         <div>
           <p
             className={`font-medium text-sm leading-relaxed break-words ${
@@ -165,10 +166,11 @@ export default function TodoItem({ todo }: Props) {
         <p className="text-xs text-slate-600">
           {new Date(todo.createdAt).toLocaleString()}
         </p>
+        </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      {/* Actions — always visible on mobile (no hover there), hover-reveal on desktop */}
+      <div className="flex items-center gap-1 justify-end sm:justify-start flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         {todo.archived ? (
           <button
             onClick={restore}
