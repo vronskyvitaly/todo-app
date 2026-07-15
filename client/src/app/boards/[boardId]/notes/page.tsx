@@ -123,7 +123,7 @@ export default function BoardNotesPage({ params }: Props) {
 
               {/* Row 2: description — renders only if present (same on both pages) */}
               {board.description && (
-                <p className="pl-7 text-xs text-slate-400 truncate">{board.description}</p>
+                <p className="pl-7 text-xs text-slate-400 truncate">{renderWithLinks(board.description)}</p>
               )}
 
               {/* Row 3: tabs centered + share button */}

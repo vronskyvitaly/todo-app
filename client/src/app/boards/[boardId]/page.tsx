@@ -13,6 +13,27 @@ interface Props {
   params: { boardId: string };
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderWithLinks(text: string) {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-indigo-400 hover:text-indigo-300 underline transition-colors"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function BoardPage({ params }: Props) {
   const { boardId } = params;
   const router = useRouter();
@@ -68,7 +89,7 @@ export default function BoardPage({ params }: Props) {
 
               {/* Row 2: description — renders only if present (same on both pages) */}
               {board.description && (
-                <p className="pl-7 text-xs text-slate-400 truncate">{board.description}</p>
+                <p className="pl-7 text-xs text-slate-400 truncate">{renderWithLinks(board.description)}</p>
               )}
 
               {/* Row 3: tabs centered */}
