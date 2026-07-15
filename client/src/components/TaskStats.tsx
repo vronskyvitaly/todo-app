@@ -11,7 +11,7 @@ export default function TaskStats() {
   const isLoading = useAppSelector((s) => s.todos.isLoading);
   const todos = useAppSelector((s) => s.todos.todos);
 
-  const myTasks = todos.filter((t) => t.boardId === null);
+  const myTasks = todos.filter((t) => t.boardId === null && !t.archived);
   const total = myTasks.length;
   const completed = myTasks.filter((t) => t.completed).length;
   const active = total - completed;

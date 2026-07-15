@@ -49,17 +49,31 @@ export default function TodoItem({ todo }: Props) {
     });
   };
 
+  const archive = () =>
+    dispatch({
+      type: WS_SEND,
+      payload: { type: "UPDATE_TODO", payload: { id: todo.id, archived: true } },
+    });
+
+  const restore = () =>
+    dispatch({
+      type: WS_SEND,
+      payload: { type: "UPDATE_TODO", payload: { id: todo.id, archived: false } },
+    });
+
   const edit = () => dispatch(setEditingId(todo.id));
 
   return (
     <div
       className={`group flex items-start gap-4 rounded-xl border px-5 py-4 transition-all duration-200 animate-fade-in
         ${
-          todo.completed
-            ? "bg-slate-800/30 border-slate-700/30 opacity-60"
-            : todo.important
-              ? "bg-amber-500/[0.04] border-amber-500/30 border-l-[3px] border-l-amber-400 hover:border-amber-400/60"
-              : "bg-slate-800/60 border-slate-700/50 hover:border-slate-600/60"
+          todo.archived
+            ? "bg-slate-800/20 border-slate-700/30 border-dashed opacity-50"
+            : todo.completed
+              ? "bg-slate-800/30 border-slate-700/30 opacity-60"
+              : todo.important
+                ? "bg-amber-500/[0.04] border-amber-500/30 border-l-[3px] border-l-amber-400 hover:border-amber-400/60"
+                : "bg-slate-800/60 border-slate-700/50 hover:border-slate-600/60"
         }`}
     >
       {/* Checkbox */}
@@ -149,6 +163,31 @@ export default function TodoItem({ todo }: Props) {
 
       {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {todo.archived ? (
+          <button
+            onClick={restore}
+            disabled={!connected}
+            aria-label="Restore task"
+            title="Restore from archive"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 transition-colors disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={archive}
+            disabled={!connected}
+            aria-label="Archive task"
+            title="Send to archive"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 transition-colors disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V5a1 1 0 011-1h16a1 1 0 011 1v1a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4" />
+            </svg>
+          </button>
+        )}
         <button
           onClick={edit}
           disabled={!connected}

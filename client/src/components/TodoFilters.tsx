@@ -10,6 +10,7 @@ const FILTERS: { label: string; value: FilterType }[] = [
   { label: "Active", value: "active" },
   { label: "Completed", value: "completed" },
   { label: "Important", value: "important" },
+  { label: "Archived", value: "archived" },
 ];
 
 export default function TodoFilters() {
@@ -19,11 +20,11 @@ export default function TodoFilters() {
   const connected = useAppSelector((s) => s.todos.connected);
 
   const myTasks = todos.filter((t) => t.boardId === null);
-  const completedCount = myTasks.filter((t) => t.completed).length;
+  const completedCount = myTasks.filter((t) => t.completed && !t.archived).length;
 
   const clearCompleted = () => {
     myTasks
-      .filter((t) => t.completed)
+      .filter((t) => t.completed && !t.archived)
       .forEach((t) =>
         dispatch({ type: WS_SEND, payload: { type: "DELETE_TODO", payload: { id: t.id } } })
       );
@@ -31,20 +32,22 @@ export default function TodoFilters() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/50 rounded-xl p-1">
-        {FILTERS.map(({ label, value }) => (
-          <button
-            key={value}
-            onClick={() => dispatch(setFilter(value))}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === value
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/50 rounded-xl p-1 min-w-max sm:min-w-0">
+          {FILTERS.map(({ label, value }) => (
+            <button
+              key={value}
+              onClick={() => dispatch(setFilter(value))}
+              className={`flex-1 min-w-[4.5rem] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                filter === value
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {completedCount > 0 && connected && (

@@ -42,7 +42,7 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 TODO_COLS = (
     "id, title, description, completed, created_at, important, due_date, "
     "priority, tags, board_id, column_id, position, reminder_at, reminder_sent, "
-    "recurring_days, recurring_time, recurring_count"
+    "recurring_days, recurring_time, recurring_count, archived"
 )
 BOARD_COLS  = "id, user_id, name, description, notes, created_at"
 COLUMN_COLS = "id, board_id, name, position, created_at"
@@ -111,6 +111,7 @@ async def lifespan(app: FastAPI):
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_count      INTEGER   NOT NULL DEFAULT 0;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_sent_count INTEGER   NOT NULL DEFAULT 0;
             ALTER TABLE todos ADD COLUMN IF NOT EXISTS recurring_last_sent  DATE;
+            ALTER TABLE todos ADD COLUMN IF NOT EXISTS archived             BOOLEAN   NOT NULL DEFAULT FALSE;
         """)
         # One-time fix: reset recurring data that caused client-side crashes
         already_fixed = await conn.fetchval("""
@@ -178,6 +179,7 @@ def row_to_todo(r: asyncpg.Record) -> dict:
         "recurringDays":   list(r["recurring_days"]),
         "recurringTime":   r["recurring_time"],
         "recurringCount":  r["recurring_count"],
+        "archived":        r["archived"],
     }
 
 
@@ -242,7 +244,7 @@ async def check_reminders() -> None:
         # Debug: total subscriptions
         sub_count = await conn.fetchval("SELECT COUNT(*) FROM push_subscriptions")
         pending = await conn.fetchval(
-            "SELECT COUNT(*) FROM todos WHERE reminder_at IS NOT NULL AND reminder_sent=FALSE AND completed=FALSE"
+            "SELECT COUNT(*) FROM todos WHERE reminder_at IS NOT NULL AND reminder_sent=FALSE AND completed=FALSE AND archived=FALSE"
         )
         print(f"[reminders] tick subs={sub_count} pending_reminders={pending} now={now.isoformat()}")
 
@@ -253,6 +255,7 @@ async def check_reminders() -> None:
             WHERE t.reminder_at <= $1
               AND t.reminder_sent = FALSE
               AND t.completed     = FALSE
+              AND t.archived      = FALSE
         """, now)
 
         print(f"[reminders] due now: {len(rows)}")
@@ -307,6 +310,7 @@ async def check_reminders() -> None:
               AND (t.recurring_count = 0 OR t.recurring_sent_count < t.recurring_count)
               AND cardinality(t.recurring_days) > 0
               AND t.completed = FALSE
+              AND t.archived  = FALSE
         """, current_dow, current_hhmm)
 
         print(f"[recurring] dow={current_dow} time={current_hhmm} due={len(recurring_rows)}")
@@ -691,6 +695,8 @@ async def handle_message(websocket: WebSocket, user_id: str, raw: str) -> None:
                 updates["recurring_time"] = str(payload["recurringTime"])[:5]
             if "recurringCount" in payload:
                 updates["recurring_count"] = max(0, int(payload["recurringCount"]))
+            if "archived" in payload:
+                updates["archived"] = bool(payload["archived"])
             if not updates:
                 return
 

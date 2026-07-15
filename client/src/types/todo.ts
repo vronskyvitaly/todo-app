@@ -16,6 +16,7 @@ export interface Todo {
   recurringDays: number[];
   recurringTime: string;
   recurringCount: number;
+  archived: boolean;
 }
 
 export interface Board {
@@ -67,7 +68,7 @@ export interface WsMessage {
   payload?: unknown;
 }
 
-export type FilterType = "all" | "active" | "completed" | "important";
+export type FilterType = "all" | "active" | "completed" | "important" | "archived";
 
 export interface AuthUser {
   id: string;

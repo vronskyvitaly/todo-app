@@ -15,6 +15,8 @@ export default function TodoList() {
   const myTasks = todos.filter((t) => t.boardId === null);
 
   const filtered = myTasks.filter((t) => {
+    if (filter === "archived") return t.archived;
+    if (t.archived) return false;
     if (filter === "active") return !t.completed;
     if (filter === "completed") return t.completed;
     if (filter === "important") return t.important;
@@ -44,7 +46,7 @@ export default function TodoList() {
       {connected && filtered.length === 0 && (
         <div className="text-center py-16 text-slate-500">
           <div className="text-4xl mb-3">
-            {filter === "completed" ? "🎉" : filter === "active" ? "✅" : filter === "important" ? "⭐" : "📋"}
+            {filter === "completed" ? "🎉" : filter === "active" ? "✅" : filter === "important" ? "⭐" : filter === "archived" ? "🗄️" : "📋"}
           </div>
           <p className="text-sm">
             {filter === "completed"
@@ -53,6 +55,8 @@ export default function TodoList() {
               ? "No active tasks"
               : filter === "important"
               ? "No important tasks"
+              : filter === "archived"
+              ? "No archived tasks"
               : "No tasks yet. Add one above!"}
           </p>
         </div>
