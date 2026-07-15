@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
+import BoardDescription from "@/components/boards/BoardDescription";
 import { WS_SEND } from "@/store/wsMiddleware";
 
 interface Props {
@@ -123,7 +124,7 @@ export default function BoardNotesPage({ params }: Props) {
 
               {/* Row 2: description — renders only if present (same on both pages) */}
               {board.description && (
-                <p className="pl-7 text-xs text-slate-400 truncate">{renderWithLinks(board.description)}</p>
+                <BoardDescription name={board.name} description={board.description} />
               )}
 
               {/* Row 3: tabs centered + share button */}

@@ -6,32 +6,12 @@ import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import KanbanBoard from "@/components/boards/KanbanBoard";
 import BoardForm from "@/components/boards/BoardForm";
+import BoardDescription from "@/components/boards/BoardDescription";
 import EditModal from "@/components/EditModal";
 import { KanbanSkeleton } from "@/components/skeletons";
 
 interface Props {
   params: { boardId: string };
-}
-
-const URL_REGEX = /(https?:\/\/[^\s]+)/g;
-
-function renderWithLinks(text: string) {
-  const parts = text.split(URL_REGEX);
-  return parts.map((part, i) =>
-    URL_REGEX.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-indigo-400 hover:text-indigo-300 underline transition-colors"
-      >
-        {part}
-      </a>
-    ) : (
-      <span key={i}>{part}</span>
-    )
-  );
 }
 
 export default function BoardPage({ params }: Props) {
@@ -89,7 +69,7 @@ export default function BoardPage({ params }: Props) {
 
               {/* Row 2: description — renders only if present (same on both pages) */}
               {board.description && (
-                <p className="pl-7 text-xs text-slate-400 truncate">{renderWithLinks(board.description)}</p>
+                <BoardDescription name={board.name} description={board.description} />
               )}
 
               {/* Row 3: tabs centered */}
