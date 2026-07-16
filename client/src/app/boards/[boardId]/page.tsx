@@ -74,13 +74,13 @@ export default function BoardPage({ params }: Props) {
               <div className="flex justify-center">
                 <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-1">
                   <button className="px-4 py-1 rounded-md text-sm font-medium bg-slate-700 text-slate-100 transition-colors" aria-current="page">
-                    Доска
+                    Board
                   </button>
                   <button
                     onClick={() => router.push(`/boards/${boardId}/notes`)}
                     className="px-4 py-1 rounded-md text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
                   >
-                    Заметки
+                    Notes
                   </button>
                 </div>
               </div>

@@ -38,7 +38,7 @@ export default function ShareNotesPage({ params }: Props) {
             <span className="text-xs text-slate-500 uppercase tracking-widest">Project Notes</span>
           </div>
           {error ? (
-            <p className="text-slate-400">Заметки не найдены или доступ закрыт.</p>
+            <p className="text-slate-400">Notes not found or access is restricted.</p>
           ) : !data ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-8 bg-slate-700/40 rounded-lg w-1/2" />
@@ -53,7 +53,7 @@ export default function ShareNotesPage({ params }: Props) {
                   {data.notes}
                 </div>
               ) : (
-                <p className="text-slate-600 italic">Заметки пока не добавлены.</p>
+                <p className="text-slate-600 italic">No notes added yet.</p>
               )}
             </>
           )}
@@ -62,7 +62,7 @@ export default function ShareNotesPage({ params }: Props) {
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-slate-800/60">
           <p className="text-xs text-slate-600">
-            Создано в{" "}
+            Made with{" "}
             <a href="/" className="text-indigo-500 hover:text-indigo-400 transition-colors">
               Todo App
             </a>
