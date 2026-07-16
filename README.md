@@ -12,7 +12,7 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 - Create tasks with title, description, priority (low / normal / high), due date, tags, and importance flag
 - Filter by All / Active / Completed / Important / Archived
 - Archive tasks to hide them from the main views without deleting them; restore anytime
-- Analytics dashboard — completion rate, overdue count, high-priority count
+- Analytics dashboard — tasks due today, active/done/important counts, completion rate, overdue count, high-priority count
 - Real-time sync across tabs
 
 **Kanban Boards**

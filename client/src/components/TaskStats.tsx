@@ -17,25 +17,27 @@ export default function TaskStats() {
   const active = total - completed;
   const important = myTasks.filter((t) => t.important).length;
   const highPriority = myTasks.filter((t) => t.priority === "high" && !t.completed).length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dueToday = myTasks.filter((t) => t.dueDate === todayStr && !t.completed).length;
   const overdue = myTasks.filter((t) => {
     if (!t.dueDate || t.completed) return false;
-    return t.dueDate < new Date().toISOString().slice(0, 10);
+    return t.dueDate < todayStr;
   }).length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const stats = [
     {
-      label: "Total",
-      value: total,
+      label: "Today",
+      value: dueToday,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round"
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       ),
-      color: "text-slate-300",
-      bg: "bg-slate-700/40",
-      border: "border-slate-600/30",
+      color: "text-sky-400",
+      bg: "bg-sky-500/10",
+      border: "border-sky-500/20",
     },
     {
       label: "Active",
