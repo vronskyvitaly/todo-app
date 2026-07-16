@@ -32,22 +32,20 @@ export default function TodoFilters() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto">
-        <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/50 rounded-xl p-1 min-w-max sm:min-w-0">
-          {FILTERS.map(({ label, value }) => (
-            <button
-              key={value}
-              onClick={() => dispatch(setFilter(value))}
-              className={`flex-1 min-w-[4.5rem] px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filter === value
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="grid grid-cols-3 sm:flex sm:items-center gap-1 bg-slate-800/60 border border-slate-700/50 rounded-xl p-1">
+        {FILTERS.map(({ label, value }) => (
+          <button
+            key={value}
+            onClick={() => dispatch(setFilter(value))}
+            className={`sm:flex-1 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              filter === value
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {completedCount > 0 && connected && (

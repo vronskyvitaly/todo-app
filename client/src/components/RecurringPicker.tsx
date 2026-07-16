@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export interface RecurringSettings {
   enabled: boolean;
-  days: number[];      // 0=Пн … 6=Вс
+  days: number[];      // 0=Mon … 6=Sun
   time: string;        // "09:00"
-  repeatCount: number; // 0 = бесконечно
+  repeatCount: number; // 0 = infinite
 }
 
 interface Props {
@@ -40,7 +40,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
     <div className="space-y-3">
       {/* Header row with toggle */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-300">Повторяющееся уведомление</span>
+        <span className="text-sm font-medium text-slate-300">Recurring reminder</span>
         <button
           type="button"
           onClick={() => set({ enabled: !value.enabled })}
@@ -61,7 +61,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
 
           {/* Days of week */}
           <div className="space-y-2">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Дни недели</span>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Days of week</span>
             <div className="flex justify-between">
               {DAYS.map((day, i) => {
                 const active = value.days.includes(i);
@@ -85,7 +85,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
 
           {/* Time */}
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0">Время уведомления</span>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide flex-shrink-0">Reminder time</span>
             <input
               type="time"
               value={value.time}
@@ -99,7 +99,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
           {/* Repeat count */}
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-              Количество повторов
+              Repeat count
             </span>
             <div className="flex items-center gap-3 bg-slate-800 rounded-xl border border-slate-700/60 px-4 py-2">
               <button
@@ -116,7 +116,7 @@ export default function RecurringPicker({ value, onChange }: Props) {
                   {value.repeatCount === 0 ? "∞" : value.repeatCount}
                 </span>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  {value.repeatCount === 0 ? "бесконечно" : `${value.repeatCount} раз`}
+                  {value.repeatCount === 0 ? "forever" : `${value.repeatCount}×`}
                 </p>
               </div>
               <button
@@ -135,12 +135,12 @@ export default function RecurringPicker({ value, onChange }: Props) {
           {value.days.length > 0 && (
             <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-3 py-2">
               <p className="text-xs text-indigo-300">
-                Каждую неделю в {value.time} по:{" "}
+                Every week at {value.time} on:{" "}
                 <span className="font-semibold">
                   {[...value.days].sort().map((d) => DAYS[d]).join(", ")}
                 </span>
-                {value.repeatCount > 0 && ` · ${value.repeatCount} раз`}
-                {value.repeatCount === 0 && " · бесконечно"}
+                {value.repeatCount > 0 && ` · ${value.repeatCount}×`}
+                {value.repeatCount === 0 && " · forever"}
               </p>
             </div>
           )}

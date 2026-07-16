@@ -33,7 +33,6 @@ export function usePushNotifications() {
   }, []);
 
   const subscribe = async () => {
-    // Добавьте эту проверку в начало функции
     if (typeof window === "undefined") return;
 
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -49,7 +48,7 @@ export function usePushNotifications() {
       applicationServerKey: vapidKey,
     });
 
-    const token = getToken(); // Используйте безопасную функцию
+    const token = getToken();
     await fetch(`${getApiUrl()}/api/push/subscribe`, {
       method: "POST",
       headers: {
@@ -62,7 +61,6 @@ export function usePushNotifications() {
   };
 
   const unsubscribe = async () => {
-    // Добавьте эту проверку в начало функции
     if (typeof window === "undefined") return;
 
     if (!("serviceWorker" in navigator)) return;
@@ -71,7 +69,7 @@ export function usePushNotifications() {
     if (!sub) return;
 
     await sub.unsubscribe();
-    const token = getToken(); // Используйте безопасную функцию
+    const token = getToken();
     await fetch(`${getApiUrl()}/api/push/unsubscribe`, {
       method: "DELETE",
       headers: {
