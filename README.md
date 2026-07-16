@@ -34,7 +34,7 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 - Server-side scheduler checks every 30 seconds via APScheduler + pywebpush
 
 **General**
-- JWT authentication — register and login
+- JWT authentication — register and login, with a polished animated login/register screen (validation-gated submit button, show/hide password)
 - All data persisted in PostgreSQL per user account
 - Skeleton loaders on initial data fetch, no layout shift on reload
 - Mobile-first: no zoom on input focus, fixed header, responsive layout
