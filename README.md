@@ -6,6 +6,14 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 
 ---
 
+<p align="center">
+  <img src="docs/screenshots/my-tasks.png" width="49%" alt="My Tasks — task list with stats and filters">
+  <img src="docs/screenshots/kanban-board.png" width="49%" alt="Kanban board with drag & drop columns">
+</p>
+<p align="center"><sub>My Tasks dashboard (left) · Kanban board (right)</sub></p>
+
+---
+
 ## Features
 
 **My Tasks**
