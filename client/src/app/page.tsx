@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import EditModal from "@/components/EditModal";
 import TodoForm from "@/components/TodoForm";
@@ -36,6 +37,12 @@ export default function Home() {
         </button>
 
         <TodoList />
+
+        <footer className="pt-6 text-center">
+          <Link href="/legal" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            Legal documents
+          </Link>
+        </footer>
       </div>
 
       {showForm && <TodoForm onClose={() => setShowForm(false)} />}

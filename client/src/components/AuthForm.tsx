@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -50,7 +50,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       const res = await fetch(`${getApiUrl()}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ email: values.email, password: values.password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -166,6 +166,33 @@ export default function AuthForm({ mode }: AuthFormProps) {
             )}
           </div>
 
+          {mode === "register" && (
+            <div className="space-y-1">
+              <label className="flex items-start gap-2.5 text-xs text-slate-400 leading-relaxed cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("consent" as keyof RegisterFormValues)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-indigo-500 cursor-pointer"
+                />
+                <span>
+                  I consent to the processing of my personal data under the{" "}
+                  <Link href="/legal/personal-data-consent" target="_blank" className="text-slate-300 underline underline-offset-2 hover:text-white transition-colors">
+                    Personal Data Consent
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/legal/privacy-policy" target="_blank" className="text-slate-300 underline underline-offset-2 hover:text-white transition-colors">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </label>
+              {(errors as FieldErrors<RegisterFormValues>).consent && (
+                <p className="text-red-400 text-xs">
+                  {(errors as FieldErrors<RegisterFormValues>).consent?.message}
+                </p>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isSubmitting || !isValid}
@@ -191,9 +218,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.75h-.152c-3.196 0-6.1-1.248-8.25-3.286z" />
             </svg>
             <p className="text-xs leading-relaxed">
-              {mode === "login" ? "By signing in, you" : "By creating an account, you"} agree to our{" "}
-              <span className="text-slate-400 font-medium">Terms of Service</span> and{" "}
-              <span className="text-slate-400 font-medium">Privacy Policy</span>
+              {mode === "login" ? "By signing in, you" : "By creating an account, you"} accept the{" "}
+              <Link href="/legal/terms-of-use" target="_blank" className="text-slate-400 font-medium hover:text-slate-200 transition-colors">
+                Terms of Use
+              </Link>
+              {mode === "login" && (
+                <>
+                  {" "}and{" "}
+                  <Link href="/legal/privacy-policy" target="_blank" className="text-slate-400 font-medium hover:text-slate-200 transition-colors">
+                    Privacy Policy
+                  </Link>
+                </>
+              )}
             </p>
           </div>
         </form>

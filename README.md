@@ -47,6 +47,11 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 - Skeleton loaders on initial data fetch, no layout shift on reload
 - Mobile-first: no zoom on input focus, fixed header, responsive layout
 
+**Legal (152-ФЗ)**
+- Public `/legal` section (no login required): Privacy Policy, Personal Data Consent, Cookie Policy, Terms of Use — in Russian
+- Operator details and processing data live in one config (`client/src/config/legal.config.ts`), shared with the portfolio site
+- Registration requires a separate, unchecked-by-default personal data consent checkbox; login/register screens link to the documents
+
 ---
 
 ## Stack
