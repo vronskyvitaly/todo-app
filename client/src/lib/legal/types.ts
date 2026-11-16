@@ -7,15 +7,12 @@ export interface Operator {
   inn: string;
   ogrn: string | null;
   kpp?: string | null;
-  legalAddress: string;
-  actualAddress: string;
 }
 
 export interface Contacts {
   email: string;
   privacyEmail: string;
   phone: string;
-  postalAddress: string;
 }
 
 export interface Site {

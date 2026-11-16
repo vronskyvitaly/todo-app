@@ -145,8 +145,7 @@ export function TermsOfUse({ config }: { config: SiteLegalConfig }) {
           календарных дней.
         </Clause>
         <Clause>
-          Реквизиты: {operatorCredentials(operator)}. Адрес: {operator.legalAddress}. Электронная почта:{" "}
-          <Mail address={contacts.email} />.
+          Реквизиты: {operatorCredentials(operator)}. Электронная почта: <Mail address={contacts.email} />.
         </Clause>
       </Section>
     </Doc>

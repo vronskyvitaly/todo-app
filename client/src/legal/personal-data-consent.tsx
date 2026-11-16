@@ -28,7 +28,6 @@ export function PersonalDataConsent({ config }: { config: SiteLegalConfig }) {
         <Clause>
           {operator.fullName}, {operatorCredentials(operator)}.
         </Clause>
-        <Clause>Адрес: {operator.legalAddress}.</Clause>
         <Clause>
           Телефон: {contacts.phone}. Адрес электронной почты: <Mail address={contacts.email} />.
         </Clause>
@@ -90,8 +89,8 @@ export function PersonalDataConsent({ config }: { config: SiteLegalConfig }) {
           отзыва Пользователем.
         </Clause>
         <Clause>
-          Согласие может быть отозвано путём направления письменного уведомления на{" "}
-          <Mail address={contacts.privacyEmail} /> либо по адресу: {contacts.postalAddress}.
+          Согласие может быть отозвано путём направления уведомления на{" "}
+          <Mail address={contacts.privacyEmail} />.
         </Clause>
         <Clause>
           После отзыва Оператор прекращает обработку, удаляет учётную запись и уничтожает данные в срок не

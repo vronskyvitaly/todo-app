@@ -25,10 +25,8 @@ export function PrivacyPolicy({ config }: { config: SiteLegalConfig }) {
           пользователях веб-приложения {site.url} (далее — «Сервис»).
         </Clause>
         <Clause>
-          Сведения об Операторе: {operatorCredentials(operator)}. Юридический адрес:{" "}
-          {operator.legalAddress}. Адрес фактического осуществления обработки персональных данных:{" "}
-          {operator.actualAddress}. Контактный телефон: {contacts.phone}. Адрес электронной почты:{" "}
-          <Mail address={contacts.email} />.
+          Сведения об Операторе: {operatorCredentials(operator)}. Контактный телефон: {contacts.phone}.
+          Адрес электронной почты: <Mail address={contacts.email} />.
         </Clause>
         {rkn.submitted && rkn.registryNumber ? (
           <Clause>
@@ -221,8 +219,8 @@ export function PrivacyPolicy({ config }: { config: SiteLegalConfig }) {
         />
         <Clause>
           Для реализации указанных прав субъект направляет запрос с адреса электронной почты, указанного
-          при регистрации, на адрес <Mail address={contacts.privacyEmail} /> либо по адресу:{" "}
-          {contacts.postalAddress}. Оператор рассматривает запрос в течение 10 (десяти) рабочих дней.
+          при регистрации, на адрес <Mail address={contacts.privacyEmail} />. Оператор рассматривает
+          запрос в течение 10 (десяти) рабочих дней.
         </Clause>
         <Clause>
           Отзыв согласия осуществляется в порядке, предусмотренном{" "}

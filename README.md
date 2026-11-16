@@ -49,7 +49,7 @@ A real-time task manager with Kanban boards, built with Next.js and FastAPI. All
 
 **Legal (152-ФЗ)**
 - Public `/legal` section (no login required): Privacy Policy, Personal Data Consent, Cookie Policy, Terms of Use — in Russian
-- Operator details and processing data live in one config (`client/src/config/legal.config.ts`), shared with the portfolio site
+- Operator details (name, INN, email, phone — no postal address) and processing data live in one config (`client/src/config/legal.config.ts`)
 - Registration requires a separate, unchecked-by-default personal data consent checkbox; login/register screens link to the documents
 
 ---
