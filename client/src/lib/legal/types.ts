@@ -25,6 +25,7 @@ export interface RknNotification {
   submitted: boolean;
   registryNumber: string | null;
   registeredAt: string | null;
+  orderNumber: string | null;
 }
 
 export type LegalBasis =

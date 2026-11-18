@@ -26,8 +26,9 @@ export const legalConfig: SiteLegalConfig = {
 
   rkn: {
     submitted: true,
-    registryNumber: "100349765",
-    registeredAt: "2026-07-13",
+    registryNumber: "77-26-561759",
+    registeredAt: "2026-07-15",
+    orderNumber: "375",
   },
 
   dataLocalizedInRussia: true,
@@ -115,7 +116,7 @@ export const legalConfig: SiteLegalConfig = {
   ],
 
   revisions: {
-    "privacy-policy": { effectiveDate: "2026-11-16", version: "1.1" },
+    "privacy-policy": { effectiveDate: "2026-11-18", version: "1.2" },
     "personal-data-consent": { effectiveDate: "2026-11-16", version: "1.1" },
     "cookie-policy": { effectiveDate: "2026-10-29", version: "1.0" },
     "terms-of-use": { effectiveDate: "2026-11-16", version: "1.1" },

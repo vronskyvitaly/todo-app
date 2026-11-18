@@ -32,7 +32,10 @@ export function PrivacyPolicy({ config }: { config: SiteLegalConfig }) {
           <Clause>
             Оператор включён в реестр операторов, осуществляющих обработку персональных данных,
             за регистрационным номером {rkn.registryNumber}
-            {rkn.registeredAt ? ` (дата включения — ${formatRussianDate(rkn.registeredAt)})` : ""}.
+            {rkn.registeredAt
+              ? ` (дата внесения в реестр — ${formatRussianDate(rkn.registeredAt)}${rkn.orderNumber ? `, приказ № ${rkn.orderNumber}` : ""})`
+              : ""}
+            .
           </Clause>
         ) : null}
         <Clause>
